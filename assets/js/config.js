@@ -1,7 +1,7 @@
 // Pusher Configuration (Frontend)
 // ユーザーが取得したApp Keysをここに入力します
-const PUSHER_APP_KEY = '424d2b24dc7496e02a55'; // App Key
-const PUSHER_CLUSTER = 'ap3'; // Cluster
+const PUSHER_APP_KEY = 'App Key'; // App Key (公開情報)
+const PUSHER_CLUSTER = 'ap3'; // Cluster (公開情報)
 
 // API Base URL (相対パス)
 const API_BASE = 'backend/api';
