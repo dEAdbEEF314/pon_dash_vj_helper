@@ -1,0 +1,10 @@
+# Backend Secrets
+backend/api/env.php
+
+# PHP built-in server logs
+*.log
+
+# Data directory (JSON sessions/SQLite databases)
+backend/data/*.json
+backend/data/*.db
+!backend/data/.htaccess

@@ -1,0 +1,466 @@
+:root {
+  --bg-color: #121212;
+  --bg-color-glass: rgba(30, 30, 30, 0.7);
+  --text-primary: #ffffff;
+  --text-secondary: #aaaaaa;
+  --accent-color: #00ffcc; /* ネオンシアン */
+  --accent-color-hover: #00e6b8;
+  --accent-glow: 0 0 10px rgba(0, 255, 204, 0.5);
+  --border-glass: 1px solid rgba(255, 255, 255, 0.1);
+  --success-color: #00ff88;
+  --success-glow: 0 0 10px rgba(0, 255, 136, 0.5);
+  --danger-color: #ff3366;
+  --danger-glow: 0 0 10px rgba(255, 51, 102, 0.5);
+  --font-family: 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  --transition-speed: 0.3s;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  background-image: 
+    radial-gradient(circle at 15% 50%, rgba(0, 255, 204, 0.05), transparent 25%),
+    radial-gradient(circle at 85% 30%, rgba(255, 51, 102, 0.05), transparent 25%);
+  background-attachment: fixed;
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Glassmorphism Container */
+.glass-panel {
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 15px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  /* Flex時の縮小許可（子要素のはみ出しを防ぐ） */
+  min-height: 0; 
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 10px 20px;
+  width: 100%;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  overflow: hidden;
+}
+
+/* Typography */
+h1, h2, h3 {
+  font-weight: 700;
+  margin-bottom: 15px;
+  letter-spacing: 0.5px;
+}
+
+h1 {
+  font-size: 1.8rem;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--accent-color);
+  text-shadow: var(--accent-glow);
+}
+
+p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* Forms and Inputs */
+.form-group {
+  margin-bottom: 20px;
+}
+
+label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="file"] {
+  width: 100%;
+  padding: 12px 15px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 1rem;
+  outline: none;
+  transition: all var(--transition-speed);
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 5px rgba(0, 255, 204, 0.3);
+}
+
+input[type="file"] {
+  padding: 10px;
+  cursor: pointer;
+}
+
+/* Buttons */
+.btn {
+  display: inline-block;
+  width: 100%;
+    padding: 10px 15px; /* ボタン高さ削減 */
+    background: transparent;
+    color: var(--text-primary);
+    border: 2px solid var(--accent-color);
+    border-radius: 8px;
+    font-size: 1.0rem; /* フォント縮小 */
+    font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all var(--transition-speed);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn:hover {
+  background: var(--accent-color);
+  color: var(--bg-color);
+  box-shadow: var(--accent-glow);
+}
+
+.btn-primary {
+  background: rgba(0, 255, 204, 0.1);
+}
+
+.btn-send {
+  border-color: var(--danger-color);
+  color: var(--danger-color);
+  height: 100px;
+  font-size: 2rem;
+}
+
+.btn-send:hover {
+  background: var(--danger-color);
+  color: #fff;
+  box-shadow: var(--danger-glow);
+}
+
+.btn-ready {
+  border-color: var(--success-color);
+  color: var(--success-color);
+  height: 100px;
+  font-size: 2rem;
+}
+
+.btn-ready:hover {
+  background: var(--success-color);
+  color: #121212;
+  box-shadow: var(--success-glow);
+}
+
+/* Track Displays */
+.track-info-box {
+  background: rgba(0, 0, 0, 0.3);
+  border-left: 3px solid var(--accent-color);
+  padding: 10px 15px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  transition: all var(--transition-speed);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.track-info-box .label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.track-info-box .track-title {
+  display: block;
+  width: 100%;
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 5px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.track-info-box .track-artist {
+  display: block;
+  width: 100%;
+  font-size: 1rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.track-info-box.send-track {
+  border-left-color: var(--danger-color);
+}
+
+.track-info-box.send-track .track-title {
+  color: var(--danger-color);
+  text-shadow: 0 0 5px rgba(255, 51, 102, 0.3);
+}
+
+/* Playlist List */
+.playlist-container {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0; /* flex child overflow hack */
+  padding-right: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.playlist-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.playlist-container::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.playlist-container::-webkit-scrollbar-thumb {
+  background: var(--text-secondary);
+  border-radius: 4px;
+}
+
+.playlist-item {
+  padding: 8px 12px; /* アイテムの余白削減 */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  transition: background var(--transition-speed);
+  display: flex;
+  flex-direction: column;
+}
+
+.playlist-item:last-child {
+  border-bottom: none;
+}
+
+.playlist-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.playlist-item.selected {
+  background: rgba(0, 255, 204, 0.1);
+  border-left: 3px solid var(--accent-color);
+}
+
+.playlist-item.played {
+  opacity: 0.5;
+}
+
+.playlist-item .p-title {
+  font-weight: 700;
+  font-size: 0.95rem; /* フォント縮小 */
+}
+
+.playlist-item .p-artist {
+  font-size: 0.8rem; /* フォント縮小 */
+  color: var(--text-secondary);
+}
+
+/* Animations */
+@keyframes flashDanger {
+  0%, 100% { background: transparent; }
+  50% { background: rgba(255, 51, 102, 0.3); box-shadow: inset 0 0 20px var(--danger-color); }
+}
+
+@keyframes flashSuccess {
+  0%, 100% { background: transparent; }
+  50% { background: rgba(0, 255, 136, 0.3); box-shadow: inset 0 0 20px var(--success-color); }
+}
+
+.is-flashing-danger {
+  animation: flashDanger 1s ease-in-out 5;
+}
+
+.is-flashing-success {
+  animation: flashSuccess 1s ease-in-out 5;
+}
+
+/* Search Results Links (VJ View) */
+.search-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 5px;
+}
+
+/* VJ READY状態のハイライト */
+.vj-ready-highlight {
+    background-color: rgba(255, 51, 102, 0.8) !important; /* 赤色反転 */
+    color: #ffffff !important; /* 白色 */
+    font-weight: bold !important;
+    border-color: rgba(255, 51, 102, 1) !important;
+    transition: all 0.3s ease;
+}
+.vj-ready-highlight .track-title,
+.vj-ready-highlight .track-artist,
+.vj-ready-highlight .label,
+.vj-ready-highlight .badge-ready {
+    color: #ffffff !important;
+}
+.search-link {
+  flex: 1 1 calc(50% - 8px);
+  text-align: center;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+  display: block;
+}
+
+.search-link:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Countdown overlay */
+.countdown-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 16px;
+  z-index: 100;
+  backdrop-filter: blur(5px);
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.countdown-overlay.active {
+  visibility: visible;
+  opacity: 1;
+}
+
+.countdown-number {
+  font-size: 6rem;
+  font-weight: 700;
+  color: var(--accent-color);
+  text-shadow: var(--accent-glow);
+}
+
+/* Login Screen Overlays */
+.login-screen {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--bg-color);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* QR Code Container */
+#qrcode {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+  padding: 15px;
+  background: #fff; /* QR codes need white background for contrast */
+  border-radius: 8px;
+}
+
+.url-box {
+  background: rgba(0, 0, 0, 0.5);
+  padding: 15px;
+  border-radius: 8px;
+  word-break: break-all;
+  font-family: monospace;
+  margin-bottom: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/*==================================================
+  Responsive Adjustments (Mobile First / PC View)
+==================================================*/
+/* デフォルト(スマホ版): 画面いっぱい */
+body.index-page .container {
+  padding: 10px;
+  width: 100%;
+  height: auto;
+  min-height: 100dvh;
+}
+
+body.app-page .container {
+  padding: 5px 10px;
+  width: 100%;
+  height: 100dvh;
+}
+
+/* PC版 (600px以上): スマホシミュレータ的UIへ */
+@media (min-width: 600px) {
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--bg-color);
+  }
+  
+  /* 事前登録ページ: 600x800, スクロールあり */
+  body.index-page .container {
+    width: 600px !important;
+    height: 800px !important;
+    min-height: 800px !important;
+    overflow-y: auto !important;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    background: rgba(15, 23, 42, 0.7);
+    padding: 20px;
+    margin: 20px auto; /* 縦にはみ出た時用 */
+  }
+  
+  /* DJ/VJページ: 600x800, スクロールなし */
+  body.app-page .container {
+    width: 600px !important;
+    height: 800px !important;
+    min-height: 800px !important;
+    overflow: hidden !important;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    background: rgba(15, 23, 42, 0.7);
+    padding: 10px;
+    margin: auto;
+  }
+}

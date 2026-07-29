@@ -1,0 +1,24 @@
+
+
+services:
+  app:
+    image: php:8.3-apache
+    container_name: pdvh-app
+    ports:
+      - "8000:80"
+    volumes:
+      - ./:/var/www/html
+    environment:
+      - TZ=Asia/Tokyo
+
+  playwright:
+    image: mcr.microsoft.com/playwright:v1.62.0-jammy
+    container_name: pdvh-playwright
+    volumes:
+      - ./:/work
+    working_dir: /work
+    # コンテナからは app サービスへアクセス可能
+    depends_on:
+      - app
+    # デフォルトは何もしないで待機（docker-compose runで上書き可能にするためcommandを使用）
+    command: ["tail", "-f", "/dev/null"]

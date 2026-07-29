@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DJ Control | Pon Dash VJ Helper (β)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="icon" type="image/png" href="/pon_dash/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/pon_dash/favicon.svg" />
+    <link rel="shortcut icon" href="/pon_dash/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/pon_dash/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="Pon Dash VJ Helper (β)" />
+    <link rel="manifest" href="/pon_dash/site.webmanifest" />
+</head>
+<body class="app-page">
+    <!-- ログイン画面 -->
+    <div class="login-screen" id="loginScreen">
+        <div class="glass-panel" style="max-width: 400px; width: 100%;">
+            <h2>DJ Login</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>操作許可パスワード</label>
+                    <input type="password" id="password" pattern="\d{4}" placeholder="数字4桁" required>
+                </div>
+                <button type="submit" class="btn btn-primary">ログイン</button>
+                <div id="loginError" style="color: var(--danger-color); margin-top: 10px; display: none;">パスワードが違います</div>
+            </form>
+        </div>
+    </div>
+
+    <div class="container hidden" id="mainApp">
+        <header style="margin-bottom: 2px; padding: 2px 0;">
+            <h1 style="font-size: 1.2rem; margin: 0; line-height: 1;">PDVH (β) - DJ Control</h1>
+            <p style="text-align: center; font-size: 0.8rem; margin: 2px 0 0 0;" id="sessionNameDisplay"></p>
+        </header>
+        
+        <!-- 上段：ステータス表示 -->
+        <div class="glass-panel" style="flex: 0 0 auto; padding: 5px;">
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+                <div class="track-info-box" style="margin-bottom: 0; padding: 4px 8px;">
+                    <div class="label" style="margin-bottom: 2px; font-size:0.75rem;">次にかける曲 (Next to Play)</div>
+                    <div class="track-title" id="nowPlayingTitle">-</div>
+                    <div class="track-artist" id="nowPlayingArtist">-</div>
+                </div>
+                <div class="track-info-box" style="margin-bottom: 0; padding: 4px 8px;">
+                    <div class="label" style="margin-bottom: 2px; font-size:0.75rem;">プレイリスト上の次の曲 (Next in Playlist)</div>
+                    <div class="track-title" id="nextTitle">-</div>
+                    <div class="track-artist" id="nextArtist">-</div>
+                </div>
+                <div class="track-info-box" style="margin-bottom: 0; padding: 4px 8px; background: rgba(0,255,204,0.05); border-left-color: rgba(0,255,204,0.5);" id="sendPreviewBox">
+                    <div class="label" style="margin-bottom: 2px; font-size:0.75rem;">VJに送る曲 (SEND to VJ)</div>
+                    <div class="track-title" id="previewTitle">-</div>
+                    <div class="track-artist" id="previewArtist">-</div>
+                </div>
+                <div class="track-info-box send-track" style="margin-bottom: 0; padding: 4px 8px;" id="sendTrackBox">
+                    <div class="label" id="sendTrackLabel" style="margin-bottom: 2px; display: flex; align-items: center; font-size:0.75rem;">VJに通知した曲 (SENT to VJ) <span id="vjReadyBadge" class="badge-ready" style="display:none; font-size: 0.8rem; white-space: nowrap; margin-left: 5px; background-color: #000; color: #fff; padding: 2px 4px; border-radius: 4px;">[VJ READY]</span></div>
+                    <div class="track-title" id="sendTitle">-</div>
+                    <div class="track-artist" id="sendArtist">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 中段：SENDボタンエリア -->
+        <div class="glass-panel" style="text-align: center; position: relative; flex: 0 0 auto; padding: 5px;">
+            <button class="btn btn-send" style="height: 50px; font-size: 1.5rem;" id="sendBtn">SEND TO VJ</button>
+            <p style="margin-top: 2px; font-size: 0.75rem; margin-bottom: 0;">※下段のリストから選択してSEND</p>
+
+            <!-- カウントダウンオーバーレイ -->
+            <div class="countdown-overlay" id="countdownOverlay">
+                <div class="countdown-number" id="countdownNumber">10</div>
+            </div>
+        </div>
+
+        <!-- 下段：プレイリスト -->
+        <div class="glass-panel" style="display: flex; flex-direction: column; flex: 1 1 40%; max-height: 45dvh; min-height: 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex: 0 0 auto;">
+                <h3>プレイリスト <span id="playlistStatus" style="font-size:0.8rem; color:var(--accent-color); margin-left:10px;"></span></h3>
+                <span style="font-size: 0.8rem;">※タップして次にかける曲をセット</span>
+            </div>
+            <!-- リスト本体 (スクロール領域) -->
+            <div class="playlist-container" id="playlistContainer">
+                <!-- JSで動的に追加 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Pusherライブラリ (M-4: 本番デプロイ時に integrity 属性を追加してください) -->
+    <!-- SRIハッシュ生成: openssl dgst -sha384 -binary pusher.min.js | openssl base64 -A -->
+    <script src="https://js.pusher.com/8.2.0/pusher.min.js" crossorigin="anonymous"></script>
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/dj.js"></script>
+</body>
+</html>
