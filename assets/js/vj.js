@@ -27,14 +27,41 @@ document.addEventListener('DOMContentLoaded', () => {
     let pusherInstance = null;
     let currentLobbyCode = null;
     let lobbyPollInterval = null;
-    let pendingLobbySessions = []; // ロビーで受信した未追加セッションのキュー
 
     // セッション Map<sessionId, SessionObject>
     const sessions = new Map();
     let activeSessionId = null;
 
+    // --- LocalStorage ヘルパー ---
+    function saveLobbyCode(code) {
+        localStorage.setItem('vjLobbyCode', code);
+    }
+    function clearLobbyCode() {
+        localStorage.removeItem('vjLobbyCode');
+        currentLobbyCode = null;
+    }
+    function saveSessions() {
+        const list = [];
+        sessions.forEach((sess, sid) => {
+            list.push({ sid, vp: sess.password, djName: sess.djName });
+        });
+        localStorage.setItem('vjSessions', JSON.stringify(list));
+    }
+    function loadSavedSessions() {
+        try {
+            const saved = localStorage.getItem('vjSessions');
+            if (saved) return JSON.parse(saved);
+        } catch(e) {}
+        return [];
+    }
+    function removeSavedSessionBySid(sid) {
+        const saved = loadSavedSessions();
+        const filtered = saved.filter(s => s.sid !== sid);
+        localStorage.setItem('vjSessions', JSON.stringify(filtered));
+    }
+
     // ----------------------------------------------------
-    // 0. 初期判定 (自動ログインURLパラメータチェック)
+    // 0. 初期判定 (URLパラメータ & LocalStorage復元)
     // ----------------------------------------------------
     const urlParams = new URLSearchParams(window.location.search);
     const initialSid = urlParams.get('sid');
@@ -44,6 +71,45 @@ document.addEventListener('DOMContentLoaded', () => {
         // パスワード込みURLからの自動ログイン
         autoLogin(initialSid, initialVp);
     }
+
+    // 保存されているLobbyの復元
+    const savedLobbyCode = localStorage.getItem('vjLobbyCode');
+    if (savedLobbyCode) {
+        currentLobbyCode = savedLobbyCode;
+        lobbyCodeDisplay.textContent = currentLobbyCode;
+        // 有効か確認しつつポーリング開始
+        resumeLobby(savedLobbyCode);
+    }
+
+    // 保存されているSessionsの復元
+    const savedSessions = loadSavedSessions();
+    savedSessions.forEach(s => {
+        // URLパラメータで処理中のものは二重に呼ばない
+        if (!initialSid || s.sid !== initialSid) { 
+            autoLogin(s.sid, s.vp, s.djName);
+        }
+    });
+
+    // セッション復元完了時に画面を切り替える判定
+    setTimeout(() => {
+        if (sessions.size > 0 && loginScreen.classList.contains('hidden') === false) {
+            loginScreen.classList.add('hidden');
+            mainApp.classList.remove('hidden');
+            const firstSid = Array.from(sessions.keys())[0];
+            switchSession(firstSid);
+            initSearchButtons();
+            initCopyableToSearchInput();
+            
+            if (currentLobbyCode) {
+                const headerCodeTag = document.getElementById('headerLobbyCodeTag');
+                const headerCodeValue = document.getElementById('headerLobbyCodeValue');
+                if (headerCodeTag && headerCodeValue) {
+                    headerCodeValue.textContent = currentLobbyCode;
+                    headerCodeTag.classList.remove('hidden');
+                }
+            }
+        }
+    }, 1000); // ログインの非同期完了を少し待つ簡易対応
 
     // ----------------------------------------------------
     // 1. モード選択 & UI切替イベント
@@ -68,13 +134,19 @@ document.addEventListener('DOMContentLoaded', () => {
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const pwd = document.getElementById('password').value;
-        const sid = initialSid || getSessionIdFromUrl();
+        const sid = initialSid || getSessionIdFromUrl(); // getSessionIdFromUrl() が無い場合はエラーになるので修正
         if (!sid) {
             alert("URLにセッションID (sid) が含まれていません。");
             return;
         }
         await autoLogin(sid, pwd);
     });
+
+    // フォールバック用のURLからsid取得
+    function getSessionIdFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        return params.get('sid');
+    }
 
     // ロビーからVJモード開始
     enterVjModeBtn.addEventListener('click', () => {
@@ -85,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
         mainApp.classList.remove('hidden');
         
         // ロビーコードをヘッダーに常時表示
-        if (typeof currentLobbyCode !== 'undefined' && currentLobbyCode) {
+        if (currentLobbyCode) {
             const headerCodeTag = document.getElementById('headerLobbyCodeTag');
             const headerCodeValue = document.getElementById('headerLobbyCodeValue');
             if (headerCodeTag && headerCodeValue) {
@@ -97,6 +169,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // 最初のセッションをアクティブ化
         const firstSid = Array.from(sessions.keys())[0];
         switchSession(firstSid);
+        initSearchButtons();
+        initCopyableToSearchInput();
     });
 
     // ----------------------------------------------------
@@ -118,24 +192,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. VJロビー処理 (ロビー作成・受信・ポーリング)
     // ----------------------------------------------------
     async function startLobby() {
+        if (currentLobbyCode) {
+            setupLobbySubscription(currentLobbyCode);
+            return;
+        }
         try {
             const res = await fetch(`${API_BASE}/action.php?action=create_lobby`, { method: 'POST' });
             const data = await res.json();
             if (data.success) {
                 currentLobbyCode = data.lobbyCode;
                 lobbyCodeDisplay.textContent = currentLobbyCode;
-
-                // Pusher ロビーチャネルの購読
-                const pusher = getPusher();
-                const lobbyChannel = pusher.subscribe(`lobby-${currentLobbyCode}`);
-                lobbyChannel.bind('session-pushed', (eventData) => {
-                    if (eventData.vjUrl) {
-                        handlePushedSession(eventData.vjUrl, eventData.djName);
-                    }
-                });
-
-                // バックグラウンドポーリング (Pusher漏れフォロー: 30秒毎)
-                lobbyPollInterval = setInterval(pollLobbySessions, 30000);
+                saveLobbyCode(currentLobbyCode);
+                setupLobbySubscription(currentLobbyCode);
             } else {
                 alert("ロビーの作成に失敗しました: " + (data.error || ''));
             }
@@ -144,17 +212,60 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function pollLobbySessions() {
-        if (!currentLobbyCode) return;
+    async function resumeLobby(code) {
         try {
             const res = await fetch(`${API_BASE}/action.php?action=poll_lobby`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ lobbyCode: currentLobbyCode })
+                body: JSON.stringify({ lobbyCode: code })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setupLobbySubscription(code);
+                if (Array.isArray(data.sessions)) {
+                    data.sessions.forEach(s => handlePushedSession(s.vjUrl, s.djName));
+                }
+            } else {
+                // 期限切れや削除済みの場合はローカルストレージもクリア
+                clearLobbyCode();
+            }
+        } catch (e) {
+            console.error("ロビー復元通信エラー", e);
+        }
+    }
+
+    function setupLobbySubscription(code) {
+        const pusher = getPusher();
+        // 既に購読済みならスキップ
+        if (pusher.channel(`lobby-${code}`)) return;
+
+        const lobbyChannel = pusher.subscribe(`lobby-${code}`);
+        lobbyChannel.bind('session-pushed', (eventData) => {
+            if (eventData.vjUrl) {
+                handlePushedSession(eventData.vjUrl, eventData.djName);
+            }
+        });
+
+        if (lobbyPollInterval) clearInterval(lobbyPollInterval);
+        lobbyPollInterval = setInterval(() => {
+            pollLobbySessions(code);
+        }, 30000);
+    }
+
+    async function pollLobbySessions(code) {
+        if (!code) return;
+        try {
+            const res = await fetch(`${API_BASE}/action.php?action=poll_lobby`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ lobbyCode: code })
             });
             const data = await res.json();
             if (data.success && Array.isArray(data.sessions)) {
                 data.sessions.forEach(s => handlePushedSession(s.vjUrl, s.djName));
+            } else if (!data.success && (data.error.includes('expired') || data.error.includes('not found') || data.error.includes('deleted'))) {
+                clearLobbyCode();
+                if (lobbyPollInterval) clearInterval(lobbyPollInterval);
             }
         } catch (e) {
             console.error("ロビーポーリングエラー", e);
@@ -166,10 +277,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const parsed = parseVjUrl(vjUrl);
             if (!parsed || !parsed.sid || !parsed.vp) return;
 
-            // すでにログイン済みセッションならスキップ
             if (sessions.has(parsed.sid)) return;
 
-            // バックグラウンドでログイン処理
             const loginRes = await fetch(`${API_BASE}/action.php?action=login&role=vj`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -179,7 +288,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.success) {
                 addSession(parsed.sid, parsed.vp, data, djName);
                 
-                // ロビー画面のリストを更新
                 if (lobbyEmptyMsg) lobbyEmptyMsg.style.display = 'none';
                 
                 const item = document.createElement('div');
@@ -198,7 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ----------------------------------------------------
     // 4. 自動ログイン & セッション追加
     // ----------------------------------------------------
-    async function autoLogin(sid, vp) {
+    async function autoLogin(sid, vp, customDjName = null) {
         try {
             const res = await fetch(`${API_BASE}/action.php?action=login&role=vj`, {
                 method: 'POST',
@@ -209,20 +317,34 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.success) {
                 // URLから vp パラメータを除去してブラウザ履歴をクリア
                 const cleanUrl = new URL(window.location.href);
-                cleanUrl.searchParams.delete('vp');
-                history.replaceState(null, '', cleanUrl.toString());
+                if (cleanUrl.searchParams.has('vp')) {
+                    cleanUrl.searchParams.delete('vp');
+                    history.replaceState(null, '', cleanUrl.toString());
+                }
 
-                addSession(sid, vp, data);
-                loginScreen.classList.add('hidden');
-                mainApp.classList.remove('hidden');
-                switchSession(sid);
-                initSearchButtons();
-                initCopyableToSearchInput();
+                addSession(sid, vp, data, customDjName);
+                
+                // 初回ログイン処理（UI切り替え）
+                if (loginScreen.classList.contains('hidden') === false) {
+                    loginScreen.classList.add('hidden');
+                    mainApp.classList.remove('hidden');
+                    switchSession(sid);
+                    initSearchButtons();
+                    initCopyableToSearchInput();
+                }
             } else {
-                document.getElementById('loginError').style.display = 'block';
+                const errBox = document.getElementById('loginError');
+                if (errBox) {
+                    errBox.style.display = 'block';
+                    errBox.textContent = data.error || 'ログインエラー';
+                }
+                // 有効期限切れ等はローカルストレージから削除してクリーンアップ
+                if (data.error && (data.error.includes('expired') || data.error.includes('not found') || data.error.includes('deleted') || data.error.includes('Invalid password'))) {
+                    removeSavedSessionBySid(sid);
+                }
             }
         } catch (e) {
-            alert("ログインエラー: " + e.message);
+            console.error("ログイン通信エラー", e);
         }
     }
 
@@ -247,7 +369,6 @@ document.addEventListener('DOMContentLoaded', () => {
             hasUnread: false
         };
 
-        // Pusher セッションチャネルの購読
         const pusher = getPusher();
         const channel = pusher.subscribe(`session-${sessionId}`);
         sessionObj.channel = channel;
@@ -277,6 +398,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         sessions.set(sessionId, sessionObj);
+        saveSessions();
         renderSessionTabs();
     }
 
@@ -304,22 +426,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!confirm(`「${sessionObj.djName}」のセッションを削除しますか？`)) return;
 
-        // Pusher 解除
         if (sessionObj.channel) {
             getPusher().unsubscribe(`session-${sessionId}`);
         }
         sessions.delete(sessionId);
+        saveSessions();
 
         if (sessions.size > 0) {
             const nextSid = Array.from(sessions.keys())[0];
             switchSession(nextSid);
         } else {
-            // 全削除されたらアプリを隠してモード選択へ
             mainApp.classList.add('hidden');
             loginScreen.classList.remove('hidden');
             modeSelectPanel.classList.remove('hidden');
             lobbyScreen.classList.add('hidden');
             directLoginForm.classList.add('hidden');
+            if (currentLobbyCode) {
+                // モード選択に戻った際にもLobbyを開いた状態にする
+                modeSelectPanel.classList.add('hidden');
+                lobbyScreen.classList.remove('hidden');
+            }
         }
     }
 
@@ -340,7 +466,6 @@ document.addEventListener('DOMContentLoaded', () => {
             labelHtml += `<span class="close-btn" title="削除">×</span>`;
             tab.innerHTML = labelHtml;
 
-            // クリックで切り替え
             tab.addEventListener('click', (e) => {
                 if (e.target.classList.contains('close-btn')) {
                     e.stopPropagation();
@@ -350,7 +475,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // 長押しで削除 (500ms) - スマホ向け
             let pressTimer = null;
             tab.addEventListener('touchstart', (e) => {
                 pressTimer = setTimeout(() => {
@@ -368,7 +492,6 @@ document.addEventListener('DOMContentLoaded', () => {
             sessionTabBar.appendChild(tab);
         });
 
-        // 「+ セッション追加」ボタン
         const addBtn = document.createElement('button');
         addBtn.type = 'button';
         addBtn.className = 'session-add-btn';
@@ -421,7 +544,6 @@ document.addEventListener('DOMContentLoaded', () => {
         el.style.transform = 'translateX(0)';
         
         requestAnimationFrame(() => {
-            // 親要素の幅と比較してはみ出しているか判定
             if (el.scrollWidth > el.parentElement.clientWidth) {
                 const dist = el.scrollWidth - el.parentElement.clientWidth + 10;
                 el.style.setProperty('--scroll-dist', `-${dist}px`);
@@ -436,7 +558,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const { tracks, nowPlayingIdx, sentIdx } = current.state;
 
-        // 1. SENDされた曲
         const targetSentIdx = sentIdx !== -1 ? sentIdx : 0;
         const sentTrack = tracks[targetSentIdx];
         const sendTitleEl = document.getElementById('sendTitle');
@@ -449,7 +570,6 @@ document.addEventListener('DOMContentLoaded', () => {
             applyMarquee(sendArtistEl, "-");
         }
 
-        // 2. 次の曲
         let nextIdx = sentIdx !== -1 ? sentIdx + 1 : nowPlayingIdx + 1;
         const nextTrack = tracks[nextIdx];
         const nextTitleEl = document.getElementById('nextTitle');
@@ -520,6 +640,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const copyables = document.querySelectorAll('#sendTrackBox .copyable');
         copyables.forEach(el => {
+            if (el.dataset.bound) return;
+            el.dataset.bound = true;
+            
             el.addEventListener('click', () => {
                 const text = el.textContent.trim();
                 if (text && text !== '-') {
@@ -604,8 +727,4 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-
-    // イベントリスナーの初期化実行
-    initSearchButtons();
-    initCopyableToSearchInput();
 });
