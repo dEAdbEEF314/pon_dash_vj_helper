@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-const DATA_DIR = '../data/';
+const DATA_DIR = __DIR__ . '/../data/';
 
 // ブルートフォース対策の設定 (M-2)
 const MAX_LOGIN_ATTEMPTS = 5;       // 最大試行回数
@@ -61,9 +61,112 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $action = $_GET['action'] ?? '';
 $role = $_GET['role'] ?? ''; // 'dj' or 'vj'
-$input = json_decode(file_get_contents('php://input'), true);
+$input = json_decode(file_get_contents('php://input'), true) ?? [];
 
-if (!$input || empty($input['sessionId'])) {
+// ========================================
+// VJロビー管理アクション (sessionIdを必須としない)
+// ========================================
+if ($action === 'create_lobby') {
+    // 6文字の英数字コード生成
+    $chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ'; // 紛らわしい 0,1,O,I を除外
+    $code = '';
+    for ($i = 0; $i < 6; $i++) {
+        $code .= $chars[random_int(0, strlen($chars) - 1)];
+    }
+    
+    $lobbyFile = DATA_DIR . 'lobby_' . $code . '.json';
+    $lobbyData = [
+        'code' => $code,
+        'created_at' => time(),
+        'sessions' => []
+    ];
+    
+    $result = file_put_contents($lobbyFile, json_encode($lobbyData), LOCK_EX);
+    if ($result === false) {
+        echo json_encode(['success' => false, 'error' => 'Failed to create lobby file. Check directory permissions.']);
+        exit;
+    }
+    
+    echo json_encode(['success' => true, 'lobbyCode' => $code]);
+    exit;
+}
+
+if ($action === 'push_to_lobby') {
+    $lobbyCode = strtoupper(trim($input['lobbyCode'] ?? ''));
+    $vjUrl = trim($input['vjUrl'] ?? '');
+    $djName = trim($input['djName'] ?? '');
+    
+    if (empty($lobbyCode) || empty($vjUrl)) {
+        echo json_encode(['success' => false, 'error' => 'Missing parameters']);
+        exit;
+    }
+    
+    $lobbyFile = DATA_DIR . 'lobby_' . $lobbyCode . '.json';
+    if (!file_exists($lobbyFile)) {
+        echo json_encode(['success' => false, 'error' => 'Lobby not found']);
+        exit;
+    }
+    
+    $fp = fopen($lobbyFile, 'r+');
+    if (!$fp || !flock($fp, LOCK_EX)) {
+        echo json_encode(['success' => false, 'error' => 'Could not lock lobby file']);
+        if ($fp) fclose($fp);
+        exit;
+    }
+    
+    $filesize = filesize($lobbyFile);
+    $lobbyData = json_decode(fread($fp, $filesize > 0 ? $filesize : 1024), true);
+    
+    // 有効期限チェック (24時間)
+    if (time() - ($lobbyData['created_at'] ?? 0) > SESSION_LIFETIME) {
+        echo json_encode(['success' => false, 'error' => 'Lobby expired']);
+        flock($fp, LOCK_UN);
+        fclose($fp);
+        exit;
+    }
+    
+    $newItem = [
+        'vjUrl' => $vjUrl,
+        'djName' => $djName !== '' ? $djName : 'DJ',
+        'addedAt' => time()
+    ];
+    
+    $lobbyData['sessions'][] = $newItem;
+    
+    ftruncate($fp, 0);
+    rewind($fp);
+    fwrite($fp, json_encode($lobbyData));
+    flock($fp, LOCK_UN);
+    fclose($fp);
+    
+    // Pusher でロビー更新イベント発行
+    if ($PUSHER_APP_ID !== 'YOUR_PUSHER_APP_ID') {
+        sendPusherEvent($PUSHER_APP_ID, $PUSHER_KEY, $PUSHER_SECRET, $PUSHER_CLUSTER, "lobby-{$lobbyCode}", 'session-pushed', [
+            'action' => 'session-pushed',
+            'vjUrl' => $vjUrl,
+            'djName' => $newItem['djName']
+        ]);
+    }
+    
+    echo json_encode(['success' => true]);
+    exit;
+}
+
+if ($action === 'poll_lobby') {
+    $lobbyCode = strtoupper(trim($input['lobbyCode'] ?? ''));
+    $lobbyFile = DATA_DIR . 'lobby_' . $lobbyCode . '.json';
+    
+    if (!file_exists($lobbyFile)) {
+        echo json_encode(['success' => false, 'error' => 'Lobby not found']);
+        exit;
+    }
+    
+    $lobbyData = json_decode(file_get_contents($lobbyFile), true);
+    echo json_encode(['success' => true, 'sessions' => $lobbyData['sessions'] ?? []]);
+    exit;
+}
+
+if (empty($input['sessionId'])) {
     echo json_encode(['success' => false, 'error' => 'Missing session ID']);
     exit;
 }

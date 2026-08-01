@@ -86,7 +86,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
                 
                 const djUrl = `${baseUrl}dj.html?sid=${result.sessionId}`;
-                const vjUrl = `${baseUrl}vj.html?sid=${result.sessionId}`;
+                // VJ用URLに閲覧許可パスワード(vp)を含めて自動ログイン可能なフルURLにする
+                const vjUrl = `${baseUrl}vj.html?sid=${result.sessionId}&vp=${vjPassword}`;
 
                 document.getElementById('djUrlBox').textContent = djUrl;
                 document.getElementById('vjUrlBox').textContent = vjUrl;
@@ -125,6 +126,81 @@ document.addEventListener('DOMContentLoaded', () => {
                         correctLevel : QRCode.CorrectLevel.H
                     });
                 }
+
+                // ① VJロビー送信ボタンのハンドラ設定
+                const pushBtn = document.getElementById('pushToLobbyBtn');
+                const lobbyInput = document.getElementById('lobbyCodeInput');
+                const pushResult = document.getElementById('lobbyPushResult');
+
+                if (pushBtn && lobbyInput) {
+                    pushBtn.onclick = async () => {
+                        const code = lobbyInput.value.trim().toUpperCase();
+                        if (!code || code.length !== 6) {
+                            alert("6文字のロビーコードを入力してください。");
+                            return;
+                        }
+
+                        pushBtn.disabled = true;
+                        pushBtn.textContent = '送信中...';
+                        pushResult.style.display = 'none';
+
+                        try {
+                            const res = await fetch(`${API_BASE}/action.php?action=push_to_lobby`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    lobbyCode: code,
+                                    vjUrl: vjUrl,
+                                    djName: accountName
+                                })
+                            });
+                            const data = await res.json();
+                            if (data.success) {
+                                pushResult.style.display = 'block';
+                                pushResult.style.color = '#00ffcc';
+                                pushResult.textContent = '✅ VJロビーへ送信成功！VJ画面に自動追加されました。';
+                            } else {
+                                throw new Error(data.error || '送信失敗');
+                            }
+                        } catch (e) {
+                            pushResult.style.display = 'block';
+                            pushResult.style.color = 'var(--danger-color, #ff3366)';
+                            pushResult.textContent = '❌ 送信エラー: ' + e.message;
+                        } finally {
+                            pushBtn.disabled = false;
+                            pushBtn.textContent = '送信';
+                        }
+                    };
+                }
+
+                // ② VJ用URLの Web Share / クリップボード コピー ボタン設定
+                const shareBtn = document.getElementById('shareVjUrlBtn');
+                if (shareBtn) {
+                    shareBtn.onclick = async () => {
+                        if (navigator.share) {
+                            try {
+                                await navigator.share({
+                                    title: `PDVH VJ用リンク (${accountName})`,
+                                    text: `VJ用自動ログインリンクです`,
+                                    url: vjUrl
+                                });
+                            } catch (err) {
+                                if (err.name !== 'AbortError') {
+                                    alert("共有エラー: " + err.message);
+                                }
+                            }
+                        } else if (navigator.clipboard) {
+                            try {
+                                await navigator.clipboard.writeText(vjUrl);
+                                alert("VJ用URL（自動ログイン付き）をクリップボードにコピーしました！");
+                            } catch (err) {
+                                alert("コピーに失敗しました: " + err.message);
+                            }
+                        } else {
+                            alert("このブラウザは共有/自動コピー非対応です。上のURLボックスからコピーしてください。");
+                        }
+                    };
+                }
             } else {
                 throw new Error(result.error || "登録エラー");
             }
@@ -135,4 +211,52 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.textContent = '登録してURLを発行';
         }
     });
+
+    // ガイドセクションの開閉トグル
+    const guideHeader = document.getElementById('guideToggleHeader');
+    const guideContent = document.getElementById('guideContent');
+    const guideIcon = document.getElementById('guideToggleIcon');
+
+    if (guideHeader && guideContent && guideIcon) {
+        guideHeader.addEventListener('click', () => {
+            if (guideContent.style.display === 'none') {
+                guideContent.style.display = 'block';
+                guideIcon.textContent = '[閉じる]';
+            } else {
+                guideContent.style.display = 'none';
+                guideIcon.textContent = '[開く]';
+            }
+        });
+    }
+
+    // index.html ガイド用モックタブ切り替え処理
+    const mockTabDj = document.getElementById('mockTabDj');
+    const mockTabVj = document.getElementById('mockTabVj');
+    const mockContentDj = document.getElementById('mockContentDj');
+    const mockContentVj = document.getElementById('mockContentVj');
+
+    if (mockTabDj && mockTabVj && mockContentDj && mockContentVj) {
+        const resetMockTabs = () => {
+            mockTabDj.style.background = 'transparent';
+            mockTabDj.style.color = '#94a3b8';
+            mockTabVj.style.background = 'transparent';
+            mockTabVj.style.color = '#94a3b8';
+            mockContentDj.style.display = 'none';
+            mockContentVj.style.display = 'none';
+        };
+
+        mockTabDj.addEventListener('click', () => {
+            resetMockTabs();
+            mockTabDj.style.background = 'var(--accent-color, #00ffcc)';
+            mockTabDj.style.color = '#000';
+            mockContentDj.style.display = 'block';
+        });
+
+        mockTabVj.addEventListener('click', () => {
+            resetMockTabs();
+            mockTabVj.style.background = 'var(--accent-color, #00ffcc)';
+            mockTabVj.style.color = '#000';
+            mockContentVj.style.display = 'block';
+        });
+    }
 });

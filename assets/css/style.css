@@ -3,7 +3,8 @@
   --bg-color-glass: rgba(30, 30, 30, 0.7);
   --text-primary: #ffffff;
   --text-secondary: #aaaaaa;
-  --accent-color: #00ffcc; /* ネオンシアン */
+  --accent-color: #00ffcc;
+  /* ネオンシアン */
   --accent-color-hover: #00e6b8;
   --accent-glow: 0 0 10px rgba(0, 255, 204, 0.5);
   --border-glass: 1px solid rgba(255, 255, 255, 0.1);
@@ -11,7 +12,7 @@
   --success-glow: 0 0 10px rgba(0, 255, 136, 0.5);
   --danger-color: #ff3366;
   --danger-glow: 0 0 10px rgba(255, 51, 102, 0.5);
-  --font-family: 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  --font-family: "DotGothic16", sans-serif;
   --transition-speed: 0.3s;
 }
 
@@ -25,7 +26,7 @@ body {
   background-color: var(--bg-color);
   color: var(--text-primary);
   font-family: var(--font-family);
-  background-image: 
+  background-image:
     radial-gradient(circle at 15% 50%, rgba(0, 255, 204, 0.05), transparent 25%),
     radial-gradient(circle at 85% 30%, rgba(255, 51, 102, 0.05), transparent 25%);
   background-attachment: fixed;
@@ -46,7 +47,8 @@ body {
   padding: 15px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   /* Flex時の縮小許可（子要素のはみ出しを防ぐ） */
-  min-height: 0; 
+  min-height: 0;
+  flex-shrink: 0;
 }
 
 .container {
@@ -62,7 +64,9 @@ body {
 }
 
 /* Typography */
-h1, h2, h3 {
+h1,
+h2,
+h3 {
   font-weight: 700;
   margin-bottom: 15px;
   letter-spacing: 0.5px;
@@ -124,13 +128,15 @@ input[type="file"] {
 .btn {
   display: inline-block;
   width: 100%;
-    padding: 10px 15px; /* ボタン高さ削減 */
-    background: transparent;
-    color: var(--text-primary);
-    border: 2px solid var(--accent-color);
-    border-radius: 8px;
-    font-size: 1.0rem; /* フォント縮小 */
-    font-weight: 700;
+  padding: 10px 15px;
+  /* ボタン高さ削減 */
+  background: transparent;
+  color: var(--text-primary);
+  border: 2px solid var(--accent-color);
+  border-radius: 8px;
+  font-size: 1.0rem;
+  /* フォント縮小 */
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 2px;
   cursor: pointer;
@@ -165,7 +171,7 @@ input[type="file"] {
 .btn-ready {
   border-color: var(--success-color);
   color: var(--success-color);
-  height: 100px;
+  height: auto;
   font-size: 2rem;
 }
 
@@ -179,9 +185,9 @@ input[type="file"] {
 .track-info-box {
   background: rgba(0, 0, 0, 0.3);
   border-left: 3px solid var(--accent-color);
-  padding: 10px 15px;
+  padding: 5px 10px;
   border-radius: 4px;
-  margin-bottom: 15px;
+  margin-bottom: 5px;
   transition: all var(--transition-speed);
   min-width: 0;
   overflow: hidden;
@@ -189,8 +195,8 @@ input[type="file"] {
 
 .track-info-box .label {
   display: block;
-  margin-bottom: 8px;
-  font-size: 0.9rem;
+  margin-bottom: 2px;
+  font-size: 0.765rem;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -199,9 +205,9 @@ input[type="file"] {
 .track-info-box .track-title {
   display: block;
   width: 100%;
-  font-size: 1.2rem;
+  font-size: 1.02rem;
   font-weight: 700;
-  margin-bottom: 5px;
+  margin-bottom: 2px;
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
@@ -211,11 +217,26 @@ input[type="file"] {
 .track-info-box .track-artist {
   display: block;
   width: 100%;
-  font-size: 1rem;
+  font-size: 0.85rem;
   color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* 文字列往復スクロール用 */
+.is-marquee {
+  display: inline-block !important;
+  width: auto !important;
+  max-width: none !important;
+  text-overflow: clip !important;
+  overflow: visible !important;
+  animation: marquee-swing 8s linear infinite alternate;
+}
+
+@keyframes marquee-swing {
+  0%, 12.5% { transform: translateX(0); }
+  87.5%, 100% { transform: translateX(var(--scroll-dist)); }
 }
 
 .track-info-box.send-track {
@@ -231,29 +252,37 @@ input[type="file"] {
 .playlist-container {
   flex: 1;
   overflow-y: auto;
-  min-height: 0; /* flex child overflow hack */
+  min-height: 0;
+  /* flex child overflow hack */
   padding-right: 5px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.2);
 }
 
-.playlist-container::-webkit-scrollbar {
-  width: 6px;
+/* Custom Scrollbar for whole page */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-.playlist-container::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.2);
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.4);
+  border-left: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 204, 0.3);
   border-radius: 4px;
 }
 
-.playlist-container::-webkit-scrollbar-thumb {
-  background: var(--text-secondary);
-  border-radius: 4px;
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 204, 0.6);
 }
 
 .playlist-item {
-  padding: 8px 12px; /* アイテムの余白削減 */
+  padding: 5px 12px;
+  /* アイテムの余白削減 */
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   cursor: pointer;
   transition: background var(--transition-speed);
@@ -280,23 +309,41 @@ input[type="file"] {
 
 .playlist-item .p-title {
   font-weight: 700;
-  font-size: 0.95rem; /* フォント縮小 */
+  font-size: 0.7125rem;
+  /* フォント縮小 */
 }
 
 .playlist-item .p-artist {
-  font-size: 0.8rem; /* フォント縮小 */
+  font-size: 0.6rem;
+  /* フォント縮小 */
   color: var(--text-secondary);
 }
 
 /* Animations */
 @keyframes flashDanger {
-  0%, 100% { background: transparent; }
-  50% { background: rgba(255, 51, 102, 0.3); box-shadow: inset 0 0 20px var(--danger-color); }
+
+  0%,
+  100% {
+    background: transparent;
+  }
+
+  50% {
+    background: rgba(255, 51, 102, 0.3);
+    box-shadow: inset 0 0 20px var(--danger-color);
+  }
 }
 
 @keyframes flashSuccess {
-  0%, 100% { background: transparent; }
-  50% { background: rgba(0, 255, 136, 0.3); box-shadow: inset 0 0 20px var(--success-color); }
+
+  0%,
+  100% {
+    background: transparent;
+  }
+
+  50% {
+    background: rgba(0, 255, 136, 0.3);
+    box-shadow: inset 0 0 20px var(--success-color);
+  }
 }
 
 .is-flashing-danger {
@@ -317,18 +364,22 @@ input[type="file"] {
 
 /* VJ READY状態のハイライト */
 .vj-ready-highlight {
-    background-color: rgba(255, 51, 102, 0.8) !important; /* 赤色反転 */
-    color: #ffffff !important; /* 白色 */
-    font-weight: bold !important;
-    border-color: rgba(255, 51, 102, 1) !important;
-    transition: all 0.3s ease;
+  background-color: rgba(255, 51, 102, 0.8) !important;
+  /* 赤色反転 */
+  color: #ffffff !important;
+  /* 白色 */
+  font-weight: bold !important;
+  border-color: rgba(255, 51, 102, 1) !important;
+  transition: all 0.3s ease;
 }
+
 .vj-ready-highlight .track-title,
 .vj-ready-highlight .track-artist,
 .vj-ready-highlight .label,
 .vj-ready-highlight .badge-ready {
-    color: #ffffff !important;
+  color: #ffffff !important;
 }
+
 .search-link {
   flex: 1 1 calc(50% - 8px);
   text-align: center;
@@ -349,7 +400,10 @@ input[type="file"] {
 /* Countdown overlay */
 .countdown-overlay {
   position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: rgba(0, 0, 0, 0.8);
   display: flex;
   justify-content: center;
@@ -377,7 +431,10 @@ input[type="file"] {
 /* Login Screen Overlays */
 .login-screen {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: var(--bg-color);
   display: flex;
   justify-content: center;
@@ -396,7 +453,8 @@ input[type="file"] {
   justify-content: center;
   margin: 20px 0;
   padding: 15px;
-  background: #fff; /* QR codes need white background for contrast */
+  background: #fff;
+  /* QR codes need white background for contrast */
   border-radius: 8px;
 }
 
@@ -435,32 +493,230 @@ body.app-page .container {
     align-items: center;
     background-color: var(--bg-color);
   }
-  
+
   /* 事前登録ページ: 600x800, スクロールあり */
   body.index-page .container {
     width: 600px !important;
-    height: 800px !important;
+    height: auto !important;
+    /* height固定を解除して中身のはみ出し防止 */
     min-height: 800px !important;
     overflow-y: auto !important;
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     background: rgba(15, 23, 42, 0.7);
     padding: 20px;
-    margin: 20px auto; /* 縦にはみ出た時用 */
+    margin: 20px auto;
+    /* 縦にはみ出た時用 */
   }
-  
-  /* DJ/VJページ: 600x800, スクロールなし */
+
+  /* DJ/VJページ: 400px〜600pxで自動調整（最大400pxに引き下げてコンパクト化） */
   body.app-page .container {
-    width: 600px !important;
+    width: 400px !important;
+    max-width: 100vw !important;
     height: 800px !important;
     min-height: 800px !important;
     overflow: hidden !important;
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     background: rgba(15, 23, 42, 0.7);
     padding: 10px;
     margin: auto;
   }
+}
+
+/*==================================================
+  Tab Bar UI
+==================================================*/
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  background: transparent;
+  color: var(--text-secondary, #94a3b8);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab-btn:hover {
+  color: var(--text-color, #ffffff);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tab-btn.active {
+  color: #ffffff;
+  background: var(--accent-color, #00ffcc);
+  color: #000000;
+  box-shadow: 0 2px 8px rgba(0, 255, 204, 0.3);
+}
+
+.tab-content.hidden {
+  display: none !important;
+}
+
+/*==================================================
+  Copyable Elements
+==================================================*/
+.copyable {
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.copyable:hover {
+  background-color: rgba(0, 255, 204, 0.15);
+  border-radius: 4px;
+}
+
+.copyable:active {
+  background-color: rgba(0, 255, 204, 0.3);
+}
+
+/*==================================================
+  Session Tab Bar (Multi-session VJ)
+==================================================*/
+.session-tab-bar {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 2px;
+  margin-bottom: 6px;
+  min-height: 46px;
+}
+
+.session-tab-bar::-webkit-scrollbar {
+  height: 6px;
+}
+
+.session-tab-bar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 4px;
+}
+
+.session-tab-bar::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 204, 0.3);
+  border-radius: 4px;
+}
+
+.session-tab-bar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 204, 0.6);
+}
+
+.session-tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 10px;
+  height: 30px;
+  font-size: 14px;
+  font-weight: bold;
+  background: rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.session-tab.active {
+  background: rgba(0, 255, 204, 0.15);
+  color: #00ffcc;
+  border-color: #00ffcc;
+}
+
+.session-tab .badge-unread {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--danger-color, #ff3366);
+  display: inline-block;
+  box-shadow: 0 0 6px #ff3366;
+}
+
+.session-tab .close-btn {
+  font-size: 0.85rem;
+  line-height: 1;
+  padding: 0 2px;
+  opacity: 0.6;
+}
+
+.session-tab .close-btn:hover {
+  opacity: 1.0;
+  color: #ff3366;
+}
+
+.session-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  height: 30px;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  color: #94a3b8;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.session-add-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+/*==================================================
+  Lobby Screen & Modal UI
+==================================================*/
+.lobby-code-display {
+  font-size: 2.2rem;
+  font-weight: bold;
+  letter-spacing: 4px;
+  color: #00ffcc;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 255, 204, 0.3);
+  margin: 12px 0;
+  font-family: monospace;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-overlay.hidden {
+  display: none !important;
+}
+
+.modal-panel {
+  max-width: 360px;
+  width: 90%;
+  padding: 16px;
 }

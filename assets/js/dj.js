@@ -38,6 +38,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('sessionNameDisplay').textContent = "Playlist: " + data.state.accountName;
                 initState(data.state);
                 initPusher();
+                initTabs();
+                initCopyableToSearchInput();
+                initDjSearchButtons();
             } else {
                 document.getElementById('loginError').style.display = 'block';
             }
@@ -130,10 +133,96 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sentTrack) {
             document.getElementById('sendTitle').textContent = sentTrack.title;
             document.getElementById('sendArtist').textContent = sentTrack.artist;
+            // VJ検索タブ側の要素も更新（安全にチェック）
+            const vjSearchTitleEl = document.getElementById('vjSearchSendTitle');
+            const vjSearchArtistEl = document.getElementById('vjSearchSendArtist');
+            if (vjSearchTitleEl) vjSearchTitleEl.textContent = sentTrack.title;
+            if (vjSearchArtistEl) vjSearchArtistEl.textContent = sentTrack.artist;
         } else {
             document.getElementById('sendTitle').textContent = "-";
             document.getElementById('sendArtist').textContent = "-";
+            const vjSearchTitleEl = document.getElementById('vjSearchSendTitle');
+            const vjSearchArtistEl = document.getElementById('vjSearchSendArtist');
+            if (vjSearchTitleEl) vjSearchTitleEl.textContent = "-";
+            if (vjSearchArtistEl) vjSearchArtistEl.textContent = "-";
         }
+    }
+
+    // タブ切り替え処理
+    function initTabs() {
+        const tabBtns = document.querySelectorAll('#djTabBar .tab-btn');
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetTab = btn.dataset.tab;
+                tabBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    if (content.id === `tab-${targetTab}`) {
+                        content.classList.remove('hidden');
+                    } else {
+                        content.classList.add('hidden');
+                    }
+                });
+            });
+        });
+    }
+
+    // 曲名/アーティスト名タップで検索窓にコピー
+    function initCopyableToSearchInput() {
+        const searchInput = document.getElementById('djVjSearchInput');
+        if (!searchInput) return;
+
+        const copyables = document.querySelectorAll('#tab-vj-search .copyable');
+        copyables.forEach(el => {
+            el.addEventListener('click', () => {
+                const text = el.textContent.trim();
+                if (text && text !== '-') {
+                    searchInput.value = text;
+                    // フォーカスを当てる
+                    searchInput.focus();
+                }
+            });
+        });
+    }
+
+    // DJページ用 素材検索ボタン処理
+    function initDjSearchButtons() {
+        const searchInput = document.getElementById('djVjSearchInput');
+        const buttons = document.querySelectorAll('#djSearchLinksSend button');
+        if (!searchInput || buttons.length === 0) return;
+
+        buttons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const query = encodeURIComponent(searchInput.value.trim());
+                if (!query) {
+                    alert('検索ワードを入力してください（SEND曲名をタップすると入力されます）');
+                    return;
+                }
+
+                let url = '';
+                switch (btn.dataset.search) {
+                    case 'google':
+                        url = `https://www.google.com/search?q=${query}`;
+                        break;
+                    case 'google_image':
+                        url = `https://www.google.com/search?tbm=isch&q=${query}`;
+                        break;
+                    case 'youtube':
+                        url = `https://www.youtube.com/results?search_query=${query}`;
+                        break;
+                    case 'niconico':
+                        url = `https://www.nicovideo.jp/search/${query}`;
+                        break;
+                    case 'giphy':
+                        url = `https://giphy.com/search/${query}`;
+                        break;
+                }
+                if (url) {
+                    window.open(url, '_blank');
+                }
+            });
+        });
     }
 
     // Pusher初期化
@@ -171,6 +260,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.selectedIdx = -1;
                 document.getElementById('vjReadyBadge').style.display = 'none';
                 document.getElementById('sendTrackBox').classList.remove('vj-ready-highlight');
+                renderPlaylist();
+                updateDisplay();
+            } else if (data.action === 'send') {
+                state.sentIdx = data.sentIdx;
                 renderPlaylist();
                 updateDisplay();
             }
