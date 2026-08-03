@@ -331,6 +331,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     switchSession(sid);
                     initSearchButtons();
                     initCopyableToSearchInput();
+
+                    // ヘッダーにロビーコードを表示（ログイン完了が早いとここで処理しないと漏れるため）
+                    if (currentLobbyCode) {
+                        const headerCodeTag = document.getElementById('headerLobbyCodeTag');
+                        const headerCodeValue = document.getElementById('headerLobbyCodeValue');
+                        if (headerCodeTag && headerCodeValue) {
+                            headerCodeValue.textContent = currentLobbyCode;
+                            headerCodeTag.classList.remove('hidden');
+                        }
+                    }
                 }
             } else {
                 const errBox = document.getElementById('loginError');

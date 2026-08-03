@@ -94,57 +94,70 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // 左右往復スクロール適用
+    function applyMarquee(el, text) {
+        if (!el) return;
+        el.textContent = text;
+        el.classList.remove('is-marquee');
+        el.style.transform = 'translateX(0)';
+        
+        requestAnimationFrame(() => {
+            if (el.scrollWidth > el.parentElement.clientWidth) {
+                const dist = el.scrollWidth - el.parentElement.clientWidth + 10;
+                el.style.setProperty('--scroll-dist', `-${dist}px`);
+                el.classList.add('is-marquee');
+            }
+        });
+    }
+
     // 表示更新
     function updateDisplay() {
-        // 1. Now Playing
+        // 1. Now Playing (UIから削除済みのため変数取得のみ)
         const nowTrack = state.tracks[state.nowPlayingIdx];
-        document.getElementById('nowPlayingTitle').textContent = nowTrack ? nowTrack.title : '-';
-        document.getElementById('nowPlayingArtist').textContent = nowTrack ? nowTrack.artist : '-';
 
-        // 2. Next in Playlist
+        // 2. Next in Playlist (UIから削除済みのためステータスのみ更新)
         const nextPlaylistIdx = state.nowPlayingIdx + 1;
         const nextPlaylistTrack = state.tracks[nextPlaylistIdx];
         if (nextPlaylistTrack) {
-            document.getElementById('nextTitle').textContent = nextPlaylistTrack.title;
-            document.getElementById('nextArtist').textContent = nextPlaylistTrack.artist;
             document.getElementById('playlistStatus').textContent = "";
         } else {
-            document.getElementById('nextTitle').textContent = "(end of playlist)";
-            document.getElementById('nextArtist').textContent = "-";
             document.getElementById('playlistStatus').textContent = "最後の曲です";
         }
 
         // 3. SEND to VJ (Preview) - タップされた曲のみ表示、未選択時はプレイリストの次の曲
+        const previewTitleEl = document.getElementById('previewTitle');
+        const previewArtistEl = document.getElementById('previewArtist');
         if (state.selectedIdx !== -1) {
             const previewTrack = state.tracks[state.selectedIdx];
-            document.getElementById('previewTitle').textContent = previewTrack.title;
-            document.getElementById('previewArtist').textContent = previewTrack.artist;
+            applyMarquee(previewTitleEl, previewTrack.title);
+            applyMarquee(previewArtistEl, previewTrack.artist);
         } else if (nextPlaylistTrack) {
             // 未選択時は次の曲をデフォルト表示
-            document.getElementById('previewTitle').textContent = nextPlaylistTrack.title;
-            document.getElementById('previewArtist').textContent = nextPlaylistTrack.artist;
+            applyMarquee(previewTitleEl, nextPlaylistTrack.title);
+            applyMarquee(previewArtistEl, nextPlaylistTrack.artist);
         } else {
-            document.getElementById('previewTitle').textContent = "-";
-            document.getElementById('previewArtist').textContent = "-";
+            applyMarquee(previewTitleEl, "-");
+            applyMarquee(previewArtistEl, "-");
         }
 
         // 4. Sent to VJ (SENDボタンで送信された曲)
         const sentTrack = state.tracks[state.sentIdx];
+        const sendTitleEl = document.getElementById('sendTitle');
+        const sendArtistEl = document.getElementById('sendArtist');
+        const vjSearchTitleEl = document.getElementById('vjSearchSendTitle');
+        const vjSearchArtistEl = document.getElementById('vjSearchSendArtist');
+        
         if (sentTrack) {
-            document.getElementById('sendTitle').textContent = sentTrack.title;
-            document.getElementById('sendArtist').textContent = sentTrack.artist;
-            // VJ検索タブ側の要素も更新（安全にチェック）
-            const vjSearchTitleEl = document.getElementById('vjSearchSendTitle');
-            const vjSearchArtistEl = document.getElementById('vjSearchSendArtist');
-            if (vjSearchTitleEl) vjSearchTitleEl.textContent = sentTrack.title;
-            if (vjSearchArtistEl) vjSearchArtistEl.textContent = sentTrack.artist;
+            applyMarquee(sendTitleEl, sentTrack.title);
+            applyMarquee(sendArtistEl, sentTrack.artist);
+            // VJ検索タブ側の要素も更新
+            if (vjSearchTitleEl) applyMarquee(vjSearchTitleEl, sentTrack.title);
+            if (vjSearchArtistEl) applyMarquee(vjSearchArtistEl, sentTrack.artist);
         } else {
-            document.getElementById('sendTitle').textContent = "-";
-            document.getElementById('sendArtist').textContent = "-";
-            const vjSearchTitleEl = document.getElementById('vjSearchSendTitle');
-            const vjSearchArtistEl = document.getElementById('vjSearchSendArtist');
-            if (vjSearchTitleEl) vjSearchTitleEl.textContent = "-";
-            if (vjSearchArtistEl) vjSearchArtistEl.textContent = "-";
+            applyMarquee(sendTitleEl, "-");
+            applyMarquee(sendArtistEl, "-");
+            if (vjSearchTitleEl) applyMarquee(vjSearchTitleEl, "-");
+            if (vjSearchArtistEl) applyMarquee(vjSearchArtistEl, "-");
         }
     }
 
@@ -164,6 +177,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         content.classList.add('hidden');
                     }
                 });
+                
+                // タブが表示されて要素の幅が確定したタイミングで再描画（左右スクロール適用のため）
+                updateDisplay();
             });
         });
     }

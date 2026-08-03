@@ -14,7 +14,7 @@
     <meta name="apple-mobile-web-app-title" content="Pon Dash VJ Helper (仮)" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Shippori+Antique&display=swap" rel="stylesheet">
     <link rel="manifest" href="/pon_dash/site.webmanifest" />
 </head>
 
@@ -23,6 +23,9 @@
     <div class="login-screen" id="loginScreen">
         <div class="glass-panel" style="max-width: 420px; width: 100%; text-align: center;" id="modeSelectPanel">
             <h2>Pon Dash VJ Helper (仮)</h2>
+            <a href="index.html" class="btn" style="width: 100%; display: inline-block; margin-bottom: 20px;">
+                🎧 DJの方はこちら（事前登録へ）
+            </a>
             <p style="font-size: 0.85rem; margin-bottom: 20px; color: var(--text-secondary);">モードを選択してください</p>
             <button type="button" class="btn btn-primary" id="startLobbyBtn"
                 style="width: 100%; height: 50px; font-size: 1.1rem; margin-bottom: 12px;">
@@ -154,16 +157,23 @@
                 <!-- 入れ替え：DJからSENDされた曲を上に -->
                 <div class="track-info-box send-track" id="sendTrackBox" style="margin-bottom: 0; padding: 4px 8px;">
                     <div class="label" style="margin-bottom: 2px; font-size:0.7rem;">DJからSENDされた曲 (タップで検索窓にコピー)</div>
-                    <div class="track-title copyable" id="sendTitle" style="cursor: pointer; margin-bottom: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="タップでコピー">-</div>
-                    <div class="track-artist copyable" id="sendArtist" style="cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="タップでコピー">-</div>
+                    <div class="track-title copyable" id="sendTitle"
+                        style="cursor: pointer; margin-bottom: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+                        title="タップでコピー">-</div>
+                    <div class="track-artist copyable" id="sendArtist"
+                        style="cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+                        title="タップでコピー">-</div>
                 </div>
 
                 <!-- 入れ替え：プレイリスト上の次の曲を下に -->
                 <div class="track-info-box" style="margin-bottom: 0; padding: 4px 8px;">
                     <div class="label" style="margin-bottom: 2px; font-size:0.7rem;">プレイリスト上の次の曲 (Next in Playlist)
                     </div>
-                    <div class="track-title" id="nextTitle" style="margin-bottom: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-</div>
-                    <div class="track-artist" id="nextArtist" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-</div>
+                    <div class="track-title" id="nextTitle"
+                        style="margin-bottom: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-
+                    </div>
+                    <div class="track-artist" id="nextArtist"
+                        style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-</div>
                 </div>
             </div>
         </div>

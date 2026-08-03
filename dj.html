@@ -14,7 +14,7 @@
     <meta name="apple-mobile-web-app-title" content="Pon Dash VJ Helper (仮)" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Shippori+Antique&display=swap" rel="stylesheet">
     <link rel="manifest" href="/pon_dash/site.webmanifest" />
 </head>
 
@@ -53,24 +53,7 @@
             <!-- 上段：ステータス表示 -->
             <div class="glass-panel" style="flex: 0 0 auto; padding: 5px;">
                 <div style="display: flex; flex-direction: column; gap: 4px;">
-                    <div class="track-info-box" style="margin-bottom: 0; padding: 4px 8px;">
-                        <div class="label" style="margin-bottom: 2px; font-size:0.75rem;">次にかける曲 (Next to Play)</div>
-                        <div class="track-title" id="nowPlayingTitle">-</div>
-                        <div class="track-artist" id="nowPlayingArtist">-</div>
-                    </div>
-                    <div class="track-info-box" style="margin-bottom: 0; padding: 4px 8px;">
-                        <div class="label" style="margin-bottom: 2px; font-size:0.75rem;">プレイリスト上の次の曲 (Next in Playlist)
-                        </div>
-                        <div class="track-title" id="nextTitle">-</div>
-                        <div class="track-artist" id="nextArtist">-</div>
-                    </div>
-                    <div class="track-info-box"
-                        style="margin-bottom: 0; padding: 4px 8px; background: rgba(0,255,204,0.05); border-left-color: rgba(0,255,204,0.5);"
-                        id="sendPreviewBox">
-                        <div class="label" style="margin-bottom: 2px; font-size:0.75rem;">VJに送る曲 (SEND to VJ)</div>
-                        <div class="track-title" id="previewTitle">-</div>
-                        <div class="track-artist" id="previewArtist">-</div>
-                    </div>
+
                     <div class="track-info-box send-track" style="margin-bottom: 0; padding: 4px 8px;"
                         id="sendTrackBox">
                         <div class="label" id="sendTrackLabel"
@@ -80,6 +63,13 @@
                                 READY]</span></div>
                         <div class="track-title" id="sendTitle">-</div>
                         <div class="track-artist" id="sendArtist">-</div>
+                    </div>
+                    <div class="track-info-box"
+                        style="margin-bottom: 0; padding: 4px 8px; background: rgba(0,255,204,0.05); border-left-color: rgba(0,255,204,0.5);"
+                        id="sendPreviewBox">
+                        <div class="label" style="margin-bottom: 2px; font-size:0.75rem;">VJに通知する曲 (SEND to VJ)</div>
+                        <div class="track-title" id="previewTitle">-</div>
+                        <div class="track-artist" id="previewArtist">-</div>
                     </div>
                 </div>
             </div>
@@ -97,7 +87,7 @@
 
             <!-- 下段：プレイリスト -->
             <div class="glass-panel"
-                style="display: flex; flex-direction: column; flex: 1 1 40%; max-height: 45dvh; min-height: 0;">
+                style="display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0;">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex: 0 0 auto;">
                     <h3>プレイリスト <span id="playlistStatus"
                             style="font-size:0.8rem; color:var(--accent-color); margin-left:10px;"></span></h3>
@@ -111,15 +101,17 @@
         </div>
 
         <!-- タブ2: VJ検索 -->
-        <div id="tab-vj-search" class="tab-content hidden" style="display: flex; flex-direction: column; gap: 8px;">
-            <div class="glass-panel" style="padding: 8px;">
-                <div class="track-info-box send-track" id="vjSearchSendTrackBox"
-                    style="margin-bottom: 0; padding: 6px 10px;">
-                    <div class="label" style="margin-bottom: 2px; font-size: 0.75rem;">DJからSENDされた曲 (タップで検索窓にコピー)</div>
-                    <div class="track-title copyable" id="vjSearchSendTitle" style="cursor: pointer; user-select: text;"
-                        title="タップでコピー">-</div>
-                    <div class="track-artist copyable" id="vjSearchSendArtist"
-                        style="cursor: pointer; user-select: text;" title="タップでコピー">-</div>
+        <div id="tab-vj-search" class="tab-content hidden" style="display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; gap: 4px;">
+            <div class="glass-panel" style="flex: 0 0 auto; padding: 5px;">
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <div class="track-info-box send-track" id="vjSearchSendTrackBox"
+                        style="margin-bottom: 0; padding: 4px 8px;">
+                        <div class="label" style="margin-bottom: 2px; font-size: 0.75rem;">DJからSENDされた曲 (タップで検索窓にコピー)</div>
+                        <div class="track-title copyable" id="vjSearchSendTitle" style="cursor: pointer; user-select: text;"
+                            title="タップでコピー">-</div>
+                        <div class="track-artist copyable" id="vjSearchSendArtist"
+                            style="cursor: pointer; user-select: text;" title="タップでコピー">-</div>
+                    </div>
                 </div>
             </div>
 
@@ -132,15 +124,15 @@
                         style="flex: 1; padding: 8px; font-size: 0.9rem;">
                 </div>
                 <div class="search-links" id="djSearchLinksSend" style="display: flex; flex-wrap: wrap; gap: 4px;">
-                    <button type="button" class="btn" style="flex: 1 1 18%; padding: 6px 2px; font-size: 0.75rem;"
+                    <button type="button" class="btn" style="flex: 1 1 18%; padding: 6px 2px; font-size: 0.71rem;"
                         data-search="google">Google</button>
-                    <button type="button" class="btn" style="flex: 1 1 18%; padding: 6px 2px; font-size: 0.75rem;"
-                        data-search="google_image">Google画像</button>
-                    <button type="button" class="btn" style="flex: 1 1 18%; padding: 6px 2px; font-size: 0.75rem;"
-                        data-search="youtube">YouTube</button>
-                    <button type="button" class="btn" style="flex: 1 1 18%; padding: 6px 2px; font-size: 0.75rem;"
+                    <button type="button" class="btn" style="flex: 1 1 18%; padding: 6px 2px; font-size: 0.71rem; line-height: 1.1;"
+                        data-search="google_image">Google<br>画像</button>
+                    <button type="button" class="btn" style="flex: 1 1 18%; padding: 6px 2px; font-size: 0.71rem; line-height: 1.1;"
+                        data-search="youtube">YOU<br>TUBE</button>
+                    <button type="button" class="btn" style="flex: 1 1 18%; padding: 6px 2px; font-size: 0.71rem;"
                         data-search="niconico">ニコニコ</button>
-                    <button type="button" class="btn" style="flex: 1 1 18%; padding: 6px 2px; font-size: 0.75rem;"
+                    <button type="button" class="btn" style="flex: 1 1 18%; padding: 6px 2px; font-size: 0.71rem;"
                         data-search="giphy">GIPHY</button>
                 </div>
             </div>
