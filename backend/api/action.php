@@ -252,7 +252,8 @@ if ($action === 'login') {
             'accountName' => $sessionData['accountName'],
             'tracks' => $sessionData['tracks'],
             'nowPlayingIdx' => $sessionData['nowPlayingIdx'],
-            'sentIdx' => $sessionData['sentIdx']
+            'sentIdx' => $sessionData['sentIdx'],
+            'customTrack' => $sessionData['customTrack'] ?? null
         ];
         
         ftruncate($fp, 0);
@@ -299,7 +300,26 @@ $eventPayload = null;
 
 if ($action === 'send' && $role === 'dj') {
     $sendIdx = (int)($input['sendIdx'] ?? -1);
-    if ($sendIdx >= 0 && $sendIdx < count($sessionData['tracks'])) {
+    $customTrack = $input['customTrack'] ?? null;
+    
+    if ($customTrack && !empty($customTrack['title'])) {
+        $cleanTitle = htmlspecialchars(trim($customTrack['title']), ENT_QUOTES, 'UTF-8');
+        $cleanArtist = htmlspecialchars(trim($customTrack['artist'] ?? ''), ENT_QUOTES, 'UTF-8');
+        if (empty($cleanArtist)) $cleanArtist = '-';
+        
+        $sessionData['customTrack'] = [
+            'title' => $cleanTitle,
+            'artist' => $cleanArtist,
+            'isVibes' => true
+        ];
+        $sessionData['sentIdx'] = -2; // 手入力特別インデックス
+        $eventPayload = [
+            'action' => 'send',
+            'sentIdx' => -2,
+            'customTrack' => $sessionData['customTrack']
+        ];
+    } elseif ($sendIdx >= 0 && $sendIdx < count($sessionData['tracks'])) {
+        unset($sessionData['customTrack']);
         $sessionData['sentIdx'] = $sendIdx;
         $eventPayload = ['action' => 'send', 'sentIdx' => $sendIdx];
     }

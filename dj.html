@@ -76,8 +76,14 @@
 
             <!-- 中段：SENDボタンエリア -->
             <div class="glass-panel" style="text-align: center; position: relative; flex: 0 0 auto; padding: 5px;">
-                <button class="btn btn-send" style="height: 50px; font-size: 1.5rem;" id="sendBtn">SEND TO VJ</button>
-                <p style="margin-top: 2px; font-size: 0.75rem; margin-bottom: 0;">※下段のリストから選択してSEND</p>
+                <div class="send-btn-group">
+                    <button class="btn btn-send" style="height: 50px; font-size: 1.3rem;" id="sendBtn">SEND TO
+                        VJ</button>
+                    <button type="button" class="btn btn-vibes" style="height: 50px; font-size: 1.3rem;"
+                        id="openVibesModalBtn">VIBES!</button>
+                </div>
+                <p style="margin-top: 4px; font-size: 0.75rem; margin-bottom: 0;">※下段のリストから選択してSEND / 「VIBES!」で手入力SEND
+                </p>
 
                 <!-- カウントダウンオーバーレイ -->
                 <div class="countdown-overlay" id="countdownOverlay">
@@ -86,11 +92,9 @@
             </div>
 
             <!-- 下段：プレイリスト -->
-            <div class="glass-panel"
-                style="display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0;">
+            <div class="glass-panel" style="display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0;">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex: 0 0 auto;">
-                    <h3>プレイリスト <span id="playlistStatus"
-                            style="font-size:0.8rem; color:var(--accent-color); margin-left:10px;"></span></h3>
+                    <h3>プレイリスト</h3>
                     <span style="font-size: 0.8rem;">※タップして次にかける曲をセット</span>
                 </div>
                 <!-- リスト本体 (スクロール領域) -->
@@ -101,14 +105,16 @@
         </div>
 
         <!-- タブ2: VJ検索 -->
-        <div id="tab-vj-search" class="tab-content hidden" style="display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; gap: 4px;">
+        <div id="tab-vj-search" class="tab-content hidden"
+            style="display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; gap: 4px;">
             <div class="glass-panel" style="flex: 0 0 auto; padding: 5px;">
                 <div style="display: flex; flex-direction: column; gap: 4px;">
                     <div class="track-info-box send-track" id="vjSearchSendTrackBox"
                         style="margin-bottom: 0; padding: 4px 8px;">
-                        <div class="label" style="margin-bottom: 2px; font-size: 0.75rem;">DJからSENDされた曲 (タップで検索窓にコピー)</div>
-                        <div class="track-title copyable" id="vjSearchSendTitle" style="cursor: pointer; user-select: text;"
-                            title="タップでコピー">-</div>
+                        <div class="label" style="margin-bottom: 2px; font-size: 0.75rem;">DJからSENDされた曲 (タップで検索窓にコピー)
+                        </div>
+                        <div class="track-title copyable" id="vjSearchSendTitle"
+                            style="cursor: pointer; user-select: text;" title="タップでコピー">-</div>
                         <div class="track-artist copyable" id="vjSearchSendArtist"
                             style="cursor: pointer; user-select: text;" title="タップでコピー">-</div>
                     </div>
@@ -126,15 +132,53 @@
                 <div class="search-links" id="djSearchLinksSend" style="display: flex; flex-wrap: wrap; gap: 4px;">
                     <button type="button" class="btn" style="flex: 1 1 18%; padding: 6px 2px; font-size: 0.71rem;"
                         data-search="google">Google</button>
-                    <button type="button" class="btn" style="flex: 1 1 18%; padding: 6px 2px; font-size: 0.71rem; line-height: 1.1;"
+                    <button type="button" class="btn"
+                        style="flex: 1 1 18%; padding: 6px 2px; font-size: 0.71rem; line-height: 1.1;"
                         data-search="google_image">Google<br>画像</button>
-                    <button type="button" class="btn" style="flex: 1 1 18%; padding: 6px 2px; font-size: 0.71rem; line-height: 1.1;"
+                    <button type="button" class="btn"
+                        style="flex: 1 1 18%; padding: 6px 2px; font-size: 0.71rem; line-height: 1.1;"
                         data-search="youtube">YOU<br>TUBE</button>
                     <button type="button" class="btn" style="flex: 1 1 18%; padding: 6px 2px; font-size: 0.71rem;"
                         data-search="niconico">ニコニコ</button>
                     <button type="button" class="btn" style="flex: 1 1 18%; padding: 6px 2px; font-size: 0.71rem;"
                         data-search="giphy">GIPHY</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 手入力 (VIBES!) モーダル -->
+    <div class="vibes-modal-overlay" id="vibesModalOverlay">
+        <div class="vibes-modal-content">
+            <div class="vibes-modal-header">
+                <h3>✏️ 手入力SEND (VIBES!)</h3>
+                <button type="button" class="vibes-modal-close" id="closeVibesModalBtn">&times;</button>
+            </div>
+            <div class="vibes-modal-body">
+                <form id="vibesForm">
+                    <div class="form-group">
+                        <label for="vibesTitleInput">曲名 / メッセージ <span style="color:#ff007f;">*</span></label>
+                        <input type="text" id="vibesTitleInput" placeholder="例: 新曲 / MCタイム" required autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="vibesArtistInput">アーティスト名 (任意)</label>
+                        <input type="text" id="vibesArtistInput" placeholder="例: DJ Vibes" autocomplete="off">
+                    </div>
+                    <div class="vibes-presets">
+                        <div class="vibes-presets-label">⚡ クイックプリセット</div>
+                        <div class="vibes-presets-list">
+                            <button type="button" class="vibes-preset-btn" data-title="🎤 MCタイム" data-artist="-">🎤
+                                MC</button>
+                            <button type="button" class="vibes-preset-btn" data-title="🔥 Vibes Track"
+                                data-artist="Unreleased">🔥 Vibes Track</button>
+                            <button type="button" class="vibes-preset-btn" data-title="⚠️ 機器トラブル調整中" data-artist="-">⚠️
+                                調整中</button>
+                            <button type="button" class="vibes-preset-btn" data-title="✨ SPECIAL GUEST"
+                                data-artist="-">✨ GUEST</button>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-vibes-send" id="sendVibesBtn">SEND TO VJ (VIBES!)</button>
+                </form>
             </div>
         </div>
     </div>

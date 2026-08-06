@@ -374,7 +374,8 @@ document.addEventListener('DOMContentLoaded', () => {
             state: {
                 tracks: loginData.state.tracks,
                 nowPlayingIdx: loginData.state.nowPlayingIdx,
-                sentIdx: loginData.state.sentIdx
+                sentIdx: loginData.state.sentIdx,
+                customTrack: loginData.state.customTrack || null
             },
             hasUnread: false
         };
@@ -386,6 +387,7 @@ document.addEventListener('DOMContentLoaded', () => {
         channel.bind('state-updated', (data) => {
             if (data.action === 'send') {
                 sessionObj.state.sentIdx = data.sentIdx;
+                sessionObj.state.customTrack = data.customTrack || null;
                 if (activeSessionId === sessionId) {
                     renderPlaylist();
                     updateDisplay();
@@ -566,21 +568,43 @@ document.addEventListener('DOMContentLoaded', () => {
         const current = sessions.get(activeSessionId);
         if (!current) return;
 
-        const { tracks, nowPlayingIdx, sentIdx } = current.state;
+        const { tracks, nowPlayingIdx, sentIdx, customTrack } = current.state;
 
-        const targetSentIdx = sentIdx !== -1 ? sentIdx : 0;
-        const sentTrack = tracks[targetSentIdx];
         const sendTitleEl = document.getElementById('sendTitle');
         const sendArtistEl = document.getElementById('sendArtist');
-        if (sentTrack) {
-            applyMarquee(sendTitleEl, sentTrack.title);
-            applyMarquee(sendArtistEl, sentTrack.artist);
+        const sendTrackBox = document.getElementById('sendTrackBox');
+        const sendLabelEl = sendTrackBox ? sendTrackBox.querySelector('.label') : null;
+
+        // Vibes! バッジ表示制御
+        let vibesBadge = document.getElementById('vjVibesBadge');
+        if (customTrack && (sentIdx === -2 || customTrack.isVibes)) {
+            if (!vibesBadge && sendLabelEl) {
+                vibesBadge = document.createElement('span');
+                vibesBadge.id = 'vjVibesBadge';
+                vibesBadge.className = 'badge-vibes';
+                vibesBadge.textContent = '[Vibes!]';
+                sendLabelEl.appendChild(vibesBadge);
+            }
+            if (vibesBadge) vibesBadge.style.display = 'inline-block';
+
+            applyMarquee(sendTitleEl, customTrack.title);
+            applyMarquee(sendArtistEl, customTrack.artist);
         } else {
-            applyMarquee(sendTitleEl, "-");
-            applyMarquee(sendArtistEl, "-");
+            if (vibesBadge) vibesBadge.style.display = 'none';
+            const targetSentIdx = (sentIdx >= 0) ? sentIdx : 0;
+            const sentTrack = tracks[targetSentIdx];
+            if (sentTrack) {
+                applyMarquee(sendTitleEl, sentTrack.title);
+                applyMarquee(sendArtistEl, sentTrack.artist);
+            } else {
+                applyMarquee(sendTitleEl, "-");
+                applyMarquee(sendArtistEl, "-");
+            }
         }
 
-        let nextIdx = sentIdx !== -1 ? sentIdx + 1 : nowPlayingIdx + 1;
+        // プレイリスト上の次の曲 (Next in Playlist)
+        // 手入力 (sentIdx === -2) の場合でも、進行中・直前の nowPlayingIdx + 1 の予定曲を維持
+        let nextIdx = (sentIdx >= 0) ? sentIdx + 1 : nowPlayingIdx + 1;
         const nextTrack = tracks[nextIdx];
         const nextTitleEl = document.getElementById('nextTitle');
         const nextArtistEl = document.getElementById('nextArtist');

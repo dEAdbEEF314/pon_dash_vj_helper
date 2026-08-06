@@ -729,3 +729,214 @@ body.app-page .container {
   width: 90%;
   padding: 16px;
 }
+
+/*==================================================
+  Vibes! Custom Input & Badge Styles
+==================================================*/
+.badge-vibes {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: bold;
+  white-space: nowrap;
+  margin-left: 5px;
+  background: linear-gradient(135deg, #ff007f, #7928ca);
+  color: #ffffff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  box-shadow: 0 0 8px rgba(255, 0, 127, 0.6);
+  letter-spacing: 0.5px;
+  animation: vibesPulse 2s infinite alternate;
+}
+
+@keyframes vibesPulse {
+  0% {
+    box-shadow: 0 0 4px rgba(255, 0, 127, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 10px rgba(255, 0, 127, 0.9), 0 0 4px rgba(121, 40, 202, 0.6);
+  }
+}
+
+.send-btn-group {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+  align-items: center;
+}
+
+.send-btn-group .btn {
+  margin-bottom: 0;
+}
+
+.send-btn-group .btn-send {
+  flex: 1 1 70%;
+}
+
+.send-btn-group .btn-vibes {
+  flex: 0 0 30%;
+}
+
+.btn-vibes {
+  border-color: #d946ef;
+  color: #d946ef;
+  background: transparent;
+  white-space: nowrap;
+}
+
+.btn-vibes:hover,
+.btn-vibes:active {
+  background: #d946ef;
+  color: #ffffff;
+  box-shadow: 0 0 15px rgba(217, 70, 239, 0.6);
+}
+
+.vibes-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 40px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.vibes-modal-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.vibes-modal-content {
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(255, 0, 127, 0.5);
+  border-radius: 12px;
+  padding: 16px;
+  width: 92%;
+  max-width: 380px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(255, 0, 127, 0.25);
+  transform: translateY(-20px);
+  transition: transform 0.25s ease;
+  color: #ffffff;
+}
+
+.vibes-modal-overlay.active .vibes-modal-content {
+  transform: translateY(0);
+}
+
+.vibes-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 0, 127, 0.2);
+  padding-bottom: 8px;
+}
+
+.vibes-modal-header h3 {
+  font-size: 1.05rem;
+  margin: 0;
+  color: #ff66cc;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vibes-modal-close {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.vibes-modal-close:hover {
+  color: #ffffff;
+}
+
+.vibes-modal-body .form-group {
+  margin-bottom: 10px;
+}
+
+.vibes-modal-body label {
+  display: block;
+  font-size: 0.8rem;
+  color: #cbd5e1;
+  margin-bottom: 4px;
+}
+
+.vibes-modal-body input[type="text"] {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 16px; /* Prevents auto-zoom on mobile safari */
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: #ffffff;
+  box-sizing: border-box;
+}
+
+.vibes-modal-body input[type="text"]:focus {
+  outline: none;
+  border-color: #ff007f;
+  box-shadow: 0 0 6px rgba(255, 0, 127, 0.4);
+}
+
+.vibes-presets {
+  margin: 10px 0 14px 0;
+}
+
+.vibes-presets-label {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+
+.vibes-presets-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.vibes-preset-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #e2e8f0;
+  font-size: 0.75rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.vibes-preset-btn:hover {
+  background: rgba(255, 0, 127, 0.2);
+  border-color: #ff007f;
+  color: #ffffff;
+}
+
+.btn-vibes-send {
+  width: 100%;
+  height: 46px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  background: linear-gradient(135deg, #ff007f, #7928ca);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(255, 0, 127, 0.4);
+  transition: transform 0.1s ease, box-shadow 0.2s ease;
+}
+
+.btn-vibes-send:active {
+  transform: scale(0.98);
+}
+

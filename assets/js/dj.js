@@ -14,7 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
         tracks: [],
         nowPlayingIdx: 0,
         selectedIdx: -1,
-        sentIdx: -1
+        sentIdx: -1,
+        customTrack: null
     };
 
     let token = '';
@@ -41,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 initTabs();
                 initCopyableToSearchInput();
                 initDjSearchButtons();
+                initVibesModal();
             } else {
                 document.getElementById('loginError').style.display = 'block';
             }
@@ -54,6 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state.tracks = serverState.tracks;
         state.nowPlayingIdx = serverState.nowPlayingIdx;
         state.sentIdx = serverState.sentIdx;
+        state.customTrack = serverState.customTrack || null;
         renderPlaylist();
         updateDisplay();
     }
@@ -115,15 +118,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // 1. Now Playing (UIから削除済みのため変数取得のみ)
         const nowTrack = state.tracks[state.nowPlayingIdx];
 
-        // 2. Next in Playlist (UIから削除済みのためステータスのみ更新)
-        const nextPlaylistIdx = state.nowPlayingIdx + 1;
-        const nextPlaylistTrack = state.tracks[nextPlaylistIdx];
-        if (nextPlaylistTrack) {
-            document.getElementById('playlistStatus').textContent = "";
-        } else {
-            document.getElementById('playlistStatus').textContent = "最後の曲です";
-        }
-
         // 3. SEND to VJ (Preview) - タップされた曲のみ表示、未選択時はプレイリストの次の曲
         const previewTitleEl = document.getElementById('previewTitle');
         const previewArtistEl = document.getElementById('previewArtist');
@@ -141,23 +135,42 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // 4. Sent to VJ (SENDボタンで送信された曲)
-        const sentTrack = state.tracks[state.sentIdx];
         const sendTitleEl = document.getElementById('sendTitle');
         const sendArtistEl = document.getElementById('sendArtist');
         const vjSearchTitleEl = document.getElementById('vjSearchSendTitle');
         const vjSearchArtistEl = document.getElementById('vjSearchSendArtist');
-        
-        if (sentTrack) {
-            applyMarquee(sendTitleEl, sentTrack.title);
-            applyMarquee(sendArtistEl, sentTrack.artist);
-            // VJ検索タブ側の要素も更新
-            if (vjSearchTitleEl) applyMarquee(vjSearchTitleEl, sentTrack.title);
-            if (vjSearchArtistEl) applyMarquee(vjSearchArtistEl, sentTrack.artist);
+        const sendTrackLabel = document.getElementById('sendTrackLabel');
+
+        // Vibes! バッジ表示管理
+        let vibesBadge = document.getElementById('djVibesBadge');
+        if (state.customTrack && (state.sentIdx === -2 || state.customTrack.isVibes)) {
+            if (!vibesBadge && sendTrackLabel) {
+                vibesBadge = document.createElement('span');
+                vibesBadge.id = 'djVibesBadge';
+                vibesBadge.className = 'badge-vibes';
+                vibesBadge.textContent = '[Vibes!]';
+                sendTrackLabel.appendChild(vibesBadge);
+            }
+            if (vibesBadge) vibesBadge.style.display = 'inline-block';
+
+            applyMarquee(sendTitleEl, state.customTrack.title);
+            applyMarquee(sendArtistEl, state.customTrack.artist);
+            if (vjSearchTitleEl) applyMarquee(vjSearchTitleEl, state.customTrack.title);
+            if (vjSearchArtistEl) applyMarquee(vjSearchArtistEl, state.customTrack.artist);
         } else {
-            applyMarquee(sendTitleEl, "-");
-            applyMarquee(sendArtistEl, "-");
-            if (vjSearchTitleEl) applyMarquee(vjSearchTitleEl, "-");
-            if (vjSearchArtistEl) applyMarquee(vjSearchArtistEl, "-");
+            if (vibesBadge) vibesBadge.style.display = 'none';
+            const sentTrack = state.tracks[state.sentIdx];
+            if (sentTrack) {
+                applyMarquee(sendTitleEl, sentTrack.title);
+                applyMarquee(sendArtistEl, sentTrack.artist);
+                if (vjSearchTitleEl) applyMarquee(vjSearchTitleEl, sentTrack.title);
+                if (vjSearchArtistEl) applyMarquee(vjSearchArtistEl, sentTrack.artist);
+            } else {
+                applyMarquee(sendTitleEl, "-");
+                applyMarquee(sendArtistEl, "-");
+                if (vjSearchTitleEl) applyMarquee(vjSearchTitleEl, "-");
+                if (vjSearchArtistEl) applyMarquee(vjSearchArtistEl, "-");
+            }
         }
     }
 
@@ -280,13 +293,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateDisplay();
             } else if (data.action === 'send') {
                 state.sentIdx = data.sentIdx;
+                state.customTrack = data.customTrack || null;
                 renderPlaylist();
                 updateDisplay();
             }
         });
     }
 
-    // SENDボタン処理
+    // SENDボタン処理 (通常プレイリストからの送信)
     const sendBtn = document.getElementById('sendBtn');
     sendBtn.addEventListener('click', async () => {
         const targetIdx = state.selectedIdx !== -1 ? state.selectedIdx : state.nowPlayingIdx + 1;
@@ -305,11 +319,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // UI更新
             state.sentIdx = targetIdx;
+            state.customTrack = null; // 通常送信のためクリア
             document.getElementById('vjReadyBadge').style.display = 'none'; // READYリセット
             document.getElementById('sendTrackBox').classList.remove('vj-ready-highlight'); // ハイライトもリセット
             
-            // **仕様変更** SENDしたら選択状態（Preview）を解除して空欄に戻すのが自然だが、
-            // そのままにしておいても良い。ここでは「Sent」に入ったため選択解除とする。
+            // Sentに入ったため選択解除
             state.selectedIdx = -1; 
             
             renderPlaylist(); // re-render for selection off
@@ -330,6 +344,88 @@ document.addEventListener('DOMContentLoaded', () => {
             alert("SENDエラー: " + e.message);
         }
     });
+
+    // 手入力 (Vibes!) モーダル機能の初期化
+    function initVibesModal() {
+        const modalOverlay = document.getElementById('vibesModalOverlay');
+        const openBtn = document.getElementById('openVibesModalBtn');
+        const closeBtn = document.getElementById('closeVibesModalBtn');
+        const vibesForm = document.getElementById('vibesForm');
+        const titleInput = document.getElementById('vibesTitleInput');
+        const artistInput = document.getElementById('vibesArtistInput');
+        const presetBtns = document.querySelectorAll('.vibes-preset-btn');
+
+        if (!modalOverlay || !openBtn || !vibesForm) return;
+
+        openBtn.addEventListener('click', () => {
+            modalOverlay.classList.add('active');
+            setTimeout(() => titleInput.focus(), 100);
+        });
+
+        const closeModal = () => {
+            modalOverlay.classList.remove('active');
+        };
+
+        if (closeBtn) closeBtn.addEventListener('click', closeModal);
+
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) closeModal();
+        });
+
+        // プリセットボタン
+        presetBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                titleInput.value = btn.dataset.title || '';
+                artistInput.value = btn.dataset.artist || '';
+                titleInput.focus();
+            });
+        });
+
+        // フォーム送信
+        vibesForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = titleInput.value.trim();
+            const artist = artistInput.value.trim() || '-';
+
+            if (!title) return;
+
+            const customTrack = { title, artist, isVibes: true };
+
+            try {
+                const res = await fetch(`${API_BASE}/action.php?action=send&role=dj`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionId, token, customTrack })
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    state.sentIdx = -2;
+                    state.customTrack = customTrack;
+                    document.getElementById('vjReadyBadge').style.display = 'none';
+                    document.getElementById('sendTrackBox').classList.remove('vj-ready-highlight');
+                    
+                    state.selectedIdx = -1;
+                    renderPlaylist();
+                    updateDisplay();
+
+                    closeModal();
+                    // フォーム入力リセット
+                    titleInput.value = '';
+                    artistInput.value = '';
+
+                    const sendBox = document.getElementById('sendTrackBox');
+                    sendBox.classList.remove('is-flashing-danger');
+                    void sendBox.offsetWidth;
+                    sendBox.classList.add('is-flashing-danger');
+                } else {
+                    alert("送信に失敗しました");
+                }
+            } catch(e) {
+                alert("手入力SENDエラー: " + e.message);
+            }
+        });
+    }
 
     // 自動曲送り（カウントダウン後）
     async function autoNextTrack(newPlayingIdx) {
