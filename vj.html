@@ -150,12 +150,10 @@
     </div>
 
     <div class="container hidden" id="mainApp">
-        <header
-            style="margin-bottom: 2px; padding: 2px 0; display: flex; justify-content: space-between; align-items: center;">
-            <h1 style="font-size: 1.1rem; margin: 0; line-height: 1;">VJ VIEW</h1>
-            <div id="headerLobbyCodeTag" class="hidden"
-                style="background: rgba(0, 153, 51, 0.2); border: 1px solid #00cc44; color: #00ff55; padding: 2px 6px; border-radius: 4px; font-size: 0.875rem; font-weight: bold; font-family: monospace;">
-                ロビーコード: <span id="headerLobbyCodeValue" style="font-size: 1.2em;"></span>
+        <header class="app-header">
+            <h1>VJ VIEW</h1>
+            <div id="headerLobbyCodeTag" class="hidden lobby-code-badge">
+                ロビーコード: <span id="headerLobbyCodeValue"></span>
             </div>
         </header>
 
@@ -166,73 +164,57 @@
         </div>
 
         <!-- 上段：ステータス表示 -->
-        <div class="glass-panel" style="flex: 0 0 auto; padding: 5px;">
-            <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div class="glass-panel panel-compact">
+            <div class="panel-inner-stack">
                 <!-- 入れ替え：DJからSENDされた曲を上に -->
-                <div class="track-info-box send-track" id="sendTrackBox" style="margin-bottom: 0; padding: 4px 8px;">
-                    <div class="label" style="margin-bottom: 2px; font-size:0.7rem;">DJからSENDされた曲 (タップで検索窓にコピー)</div>
-                    <div class="track-title copyable" id="sendTitle"
-                        style="cursor: pointer; margin-bottom: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
-                        title="タップでコピー">-</div>
-                    <div class="track-artist copyable" id="sendArtist"
-                        style="cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
-                        title="タップでコピー">-</div>
+                <div class="track-info-box send-track" id="sendTrackBox">
+                    <div class="label">DJからSENDされた曲 (タップで検索窓にコピー)</div>
+                    <div class="track-title copyable" id="sendTitle" title="タップでコピー">-</div>
+                    <div class="track-artist copyable" id="sendArtist" title="タップでコピー">-</div>
                 </div>
 
                 <!-- 入れ替え：プレイリスト上の次の曲を下に -->
-                <div class="track-info-box" style="margin-bottom: 0; padding: 4px 8px;">
-                    <div class="label" style="margin-bottom: 2px; font-size:0.7rem;">プレイリスト上の次の曲 (Next in Playlist)
-                    </div>
-                    <div class="track-title" id="nextTitle"
-                        style="margin-bottom: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-
-                    </div>
-                    <div class="track-artist" id="nextArtist"
-                        style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-</div>
+                <div class="track-info-box" id="nextTrackBox">
+                    <div class="label">プレイリスト上の次の曲 (Next in Playlist)</div>
+                    <div class="track-title" id="nextTitle">-</div>
+                    <div class="track-artist" id="nextArtist">-</div>
                 </div>
             </div>
         </div>
 
         <!-- 中段：READYボタンと検索エリア（縦積み） -->
-        <div style="display: flex; flex-direction: column; gap: 4px; flex: 0 0 auto;">
+        <div class="middle-stack">
             <!-- READYボタン (フルワイド) -->
-            <div class="glass-panel" style="padding: 4px; text-align: center;">
-                <button class="btn btn-ready" style="font-size: 1.275rem; padding: 5px;" id="readyBtn">READY</button>
-                <p style="margin-top: 2px; font-size: 0.75rem; margin-bottom: 0;">※準備完了をDJに伝えます</p>
+            <div class="glass-panel panel-compact ready-section">
+                <button class="btn btn-ready" id="readyBtn">READY</button>
+                <p class="ready-hint">※準備完了をDJに伝えます</p>
             </div>
 
             <!-- 検索リンク (テキストボックス＋5ボタン) -->
-            <div class="glass-panel" style="padding: 5px 8px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
-                    <h3 style="font-size: 0.9rem; margin: 0;">素材検索</h3>
+            <div class="glass-panel search-section">
+                <div class="section-header">
+                    <h3>素材検索</h3>
                 </div>
-                <div style="display: flex; gap: 8px; margin-bottom: 5px;">
-                    <input type="text" id="vjSearchInput" placeholder="検索ワードを入力してください"
-                        style="flex: 1; padding: 8px; font-size: 0.9rem;">
+                <div class="search-input-group">
+                    <input type="text" id="vjSearchInput" placeholder="検索ワードを入力してください">
                 </div>
-                <div class="search-links" id="searchLinksSend" style="display: flex; flex-wrap: wrap; gap: 4px;">
+                <div class="search-links" id="searchLinksSend">
                     <!-- JSでイベントリスナー付きのボタンとして処理 -->
-                    <button class="btn" style="flex: 1 1 18%; padding: 6px 2px; font-size: 0.71rem;"
-                        data-search="google">Google</button>
-                    <button class="btn" style="flex: 1 1 18%; padding: 6px 2px; font-size: 0.71rem; line-height: 1.1;"
-                        data-search="google_image">Google<br>画像</button>
-                    <button class="btn" style="flex: 1 1 18%; padding: 6px 2px; font-size: 0.71rem; line-height: 1.1;"
-                        data-search="youtube">YOU<br>TUBE</button>
-                    <button class="btn" style="flex: 1 1 18%; padding: 6px 2px; font-size: 0.71rem;"
-                        data-search="niconico">ニコニコ</button>
-                    <button class="btn" style="flex: 1 1 18%; padding: 6px 2px; font-size: 0.71rem;"
-                        data-search="giphy">GIPHY</button>
+                    <button class="btn" data-search="google">Google</button>
+                    <button class="btn" data-search="google_image">Google 画像</button>
+                    <button class="btn" data-search="youtube">YouTube</button>
+                    <button class="btn" data-search="niconico">ニコニコ</button>
+                    <button class="btn" data-search="giphy">GIPHY</button>
                 </div>
             </div>
         </div>
 
         <!-- 下段：プレイリスト -->
-        <div class="glass-panel"
-            style="display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; margin-top: 5px;">
-            <div
-                style="display: flex; justify-content: space-between; align-items: center; flex: 0 0 auto; margin-bottom: 5px;">
-                <h3 style="font-size: 0.9rem; margin: 0;">プレイリスト (DJ全体像)</h3>
+        <div class="glass-panel playlist-section">
+            <div class="section-header">
+                <h3>プレイリスト (DJ全体像)</h3>
             </div>
-            <div class="playlist-container" id="playlistContainer" style="flex: 1; overflow-y: auto;">
+            <div class="playlist-container" id="playlistContainer">
                 <!-- JSで動的に追加 -->
             </div>
         </div>

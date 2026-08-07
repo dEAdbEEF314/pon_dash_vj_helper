@@ -36,38 +36,32 @@
     </div>
 
     <div class="container hidden" id="mainApp">
-        <header style="margin-bottom: 2px; padding: 2px 0;">
-            <h1 style="font-size: 1.2rem; margin: 0; line-height: 1;">DJ Control</h1>
-            <p style="text-align: center; font-size: 0.8rem; margin: 2px 0 0 0;" id="sessionNameDisplay"></p>
+        <header>
+            <h1>DJ Control</h1>
+            <p id="sessionNameDisplay"></p>
         </header>
 
         <!-- タブ切替バー -->
-        <div class="tab-bar" id="djTabBar" style="margin-bottom: 8px;">
+        <div class="tab-bar" id="djTabBar">
             <button type="button" class="tab-btn active" data-tab="dj">🎧 DJ操作</button>
             <button type="button" class="tab-btn" data-tab="vj-search">🔍 VJ検索</button>
         </div>
 
         <!-- タブ1: DJ操作 -->
-        <div id="tab-dj" class="tab-content"
-            style="display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; gap: 4px;">
+        <div id="tab-dj" class="tab-content">
             <!-- 上段：ステータス表示 -->
-            <div class="glass-panel" style="flex: 0 0 auto; padding: 5px;">
-                <div style="display: flex; flex-direction: column; gap: 4px;">
-
-                    <div class="track-info-box send-track" style="margin-bottom: 0; padding: 4px 8px;"
-                        id="sendTrackBox">
-                        <div class="label" id="sendTrackLabel"
-                            style="margin-bottom: 2px; display: flex; align-items: center; font-size:0.75rem;">VJに通知した曲
-                            (SENT to VJ) <span id="vjReadyBadge" class="badge-ready"
-                                style="display:none; font-size: 0.8rem; white-space: nowrap; margin-left: 5px; background-color: #000; color: #fff; padding: 2px 4px; border-radius: 4px;">[VJ
-                                READY]</span></div>
+            <div class="glass-panel panel-compact">
+                <div class="panel-inner-stack">
+                    <div class="track-info-box send-track" id="sendTrackBox">
+                        <div class="label" id="sendTrackLabel">
+                            VJに通知した曲 (SENT to VJ) 
+                            <span id="vjReadyBadge" class="badge-ready" style="display:none;">[VJ READY]</span>
+                        </div>
                         <div class="track-title" id="sendTitle">-</div>
                         <div class="track-artist" id="sendArtist">-</div>
                     </div>
-                    <div class="track-info-box"
-                        style="margin-bottom: 0; padding: 4px 8px; background: rgba(0,255,204,0.05); border-left-color: rgba(0,255,204,0.5);"
-                        id="sendPreviewBox">
-                        <div class="label" style="margin-bottom: 2px; font-size:0.75rem;">VJに通知する曲 (SEND to VJ)</div>
+                    <div class="track-info-box preview-track" id="sendPreviewBox">
+                        <div class="label">VJに通知する曲 (SEND to VJ)</div>
                         <div class="track-title" id="previewTitle">-</div>
                         <div class="track-artist" id="previewArtist">-</div>
                     </div>
@@ -75,15 +69,12 @@
             </div>
 
             <!-- 中段：SENDボタンエリア -->
-            <div class="glass-panel" style="text-align: center; position: relative; flex: 0 0 auto; padding: 5px;">
+            <div class="glass-panel panel-compact send-section">
                 <div class="send-btn-group">
-                    <button class="btn btn-send" style="height: 50px; font-size: 1.3rem;" id="sendBtn">SEND TO
-                        VJ</button>
-                    <button type="button" class="btn btn-vibes" style="height: 50px; font-size: 1.3rem;"
-                        id="openVibesModalBtn">VIBES!</button>
+                    <button class="btn btn-send" id="sendBtn">SEND TO VJ</button>
+                    <button type="button" class="btn btn-vibes" id="openVibesModalBtn">VIBES!</button>
                 </div>
-                <p style="margin-top: 4px; font-size: 0.75rem; margin-bottom: 0;">※下段のリストから選択してSEND / 「VIBES!」で手入力SEND
-                </p>
+                <p class="send-hint">※下段のリストから選択してSEND / 「VIBES!」で手入力SEND</p>
 
                 <!-- カウントダウンオーバーレイ -->
                 <div class="countdown-overlay" id="countdownOverlay">
@@ -92,10 +83,10 @@
             </div>
 
             <!-- 下段：プレイリスト -->
-            <div class="glass-panel" style="display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0;">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex: 0 0 auto;">
+            <div class="glass-panel playlist-section">
+                <div class="section-header">
                     <h3>プレイリスト</h3>
-                    <span style="font-size: 0.8rem;">※タップして次にかける曲をセット</span>
+                    <span class="header-hint">※タップして次にかける曲をセット</span>
                 </div>
                 <!-- リスト本体 (スクロール領域) -->
                 <div class="playlist-container" id="playlistContainer">
@@ -105,43 +96,30 @@
         </div>
 
         <!-- タブ2: VJ検索 -->
-        <div id="tab-vj-search" class="tab-content hidden"
-            style="display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; gap: 4px;">
-            <div class="glass-panel" style="flex: 0 0 auto; padding: 5px;">
-                <div style="display: flex; flex-direction: column; gap: 4px;">
-                    <div class="track-info-box send-track" id="vjSearchSendTrackBox"
-                        style="margin-bottom: 0; padding: 4px 8px;">
-                        <div class="label" style="margin-bottom: 2px; font-size: 0.75rem;">DJからSENDされた曲 (タップで検索窓にコピー)
-                        </div>
-                        <div class="track-title copyable" id="vjSearchSendTitle"
-                            style="cursor: pointer; user-select: text;" title="タップでコピー">-</div>
-                        <div class="track-artist copyable" id="vjSearchSendArtist"
-                            style="cursor: pointer; user-select: text;" title="タップでコピー">-</div>
+        <div id="tab-vj-search" class="tab-content hidden">
+            <div class="glass-panel panel-compact">
+                <div class="panel-inner-stack">
+                    <div class="track-info-box send-track" id="vjSearchSendTrackBox">
+                        <div class="label">DJからSENDされた曲 (タップで検索窓にコピー)</div>
+                        <div class="track-title copyable" id="vjSearchSendTitle" title="タップでコピー">-</div>
+                        <div class="track-artist copyable" id="vjSearchSendArtist" title="タップでコピー">-</div>
                     </div>
                 </div>
             </div>
 
-            <div class="glass-panel" style="padding: 8px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                    <h3 style="font-size: 0.95rem; margin: 0;">素材検索</h3>
+            <div class="glass-panel search-section">
+                <div class="section-header">
+                    <h3>素材検索</h3>
                 </div>
-                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                    <input type="text" id="djVjSearchInput" placeholder="検索ワードを入力してください（曲名タップも可）"
-                        style="flex: 1; padding: 8px; font-size: 0.9rem;">
+                <div class="search-input-group">
+                    <input type="text" id="djVjSearchInput" placeholder="検索ワードを入力してください（曲名タップも可）">
                 </div>
-                <div class="search-links" id="djSearchLinksSend" style="display: flex; flex-wrap: wrap; gap: 4px;">
-                    <button type="button" class="btn" style="flex: 1 1 18%; padding: 6px 2px; font-size: 0.71rem;"
-                        data-search="google">Google</button>
-                    <button type="button" class="btn"
-                        style="flex: 1 1 18%; padding: 6px 2px; font-size: 0.71rem; line-height: 1.1;"
-                        data-search="google_image">Google<br>画像</button>
-                    <button type="button" class="btn"
-                        style="flex: 1 1 18%; padding: 6px 2px; font-size: 0.71rem; line-height: 1.1;"
-                        data-search="youtube">YOU<br>TUBE</button>
-                    <button type="button" class="btn" style="flex: 1 1 18%; padding: 6px 2px; font-size: 0.71rem;"
-                        data-search="niconico">ニコニコ</button>
-                    <button type="button" class="btn" style="flex: 1 1 18%; padding: 6px 2px; font-size: 0.71rem;"
-                        data-search="giphy">GIPHY</button>
+                <div class="search-links" id="djSearchLinksSend">
+                    <button type="button" class="btn" data-search="google">Google</button>
+                    <button type="button" class="btn" data-search="google_image">Google 画像</button>
+                    <button type="button" class="btn" data-search="youtube">YouTube</button>
+                    <button type="button" class="btn" data-search="niconico">ニコニコ</button>
+                    <button type="button" class="btn" data-search="giphy">GIPHY</button>
                 </div>
             </div>
         </div>
