@@ -1,26 +1,29 @@
 {
-  "timestamp": "2026-08-08T02:25:00.000Z",
-  "targetUrl": "http://localhost:8787",
-  "testResults": [
+  "test_name": "Index Page Step 3 Vibes Mock UI Verification",
+  "timestamp": "2026-08-08T03:02:50+09:00",
+  "target_url": "http://localhost:8787/index.html",
+  "status": "PASS",
+  "verifications": [
     {
-      "testName": "GET /backend/api/config.php",
-      "status": "PASS",
-      "returnedData": {
-        "PUSHER_APP_KEY": "424d2b24dc7496e02a55",
-        "PUSHER_CLUSTER": "ap3",
-        "API_BASE": "backend/api"
-      },
-      "verification": "機密情報(PUSHER_SECRET等)を含まず、公開用設定のみが正常返却されることを確認"
+      "check": "SEND TO VJ and VIBES! buttons exist side by side",
+      "result": "PASS",
+      "details": "Container style display: flex; gap: 6px; SEND TO VJ flex: 1 1 70%; VIBES! flex: 0 0 30%"
     },
     {
-      "testName": "GET /backend/api/env.php Direct Access",
-      "status": "PASS",
-      "verification": "ブラウザから直接アクセス時、PHP実行結果(白紙)が返りソースコードや秘密鍵が露出しないことを確認"
+      "check": "Hint text updated",
+      "result": "PASS",
+      "expected": "※下段のリストから選択してSEND / 「VIBES!」で手入力SEND",
+      "actual": "※下段のリストから選択してSEND / 「VIBES!」で手入力SEND"
     },
     {
-      "testName": "Frontend Load (index.html, dj.html, vj.html)",
-      "status": "PASS",
-      "verification": "JSコンソールエラーなし、画面デザインおよび各種要素が正常描画されることを確認"
+      "check": "Desktop view responsiveness (898px viewport)",
+      "result": "PASS",
+      "details": "Layout rendered cleanly without clipping or text wrapping"
+    },
+    {
+      "check": "Mobile view responsiveness (375px viewport)",
+      "result": "PASS",
+      "details": "Parent width 404px, SEND TO VJ width ~277px, VIBES! width ~121px. Maintained 70%:30% ratio"
     }
   ]
 }

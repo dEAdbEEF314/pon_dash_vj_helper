@@ -1,3 +1,6 @@
+日時（2026/08/08 03:31:00）: VJロビー画面（vj.html）にて「VJモードを開始する」ボタンを「使い方ガイド」の上へ配置変更し、ガイドの見出しに「(クリックで開閉)」の案内テキストを追加。常連ユーザーが操作不要で即開始ボタンを押せるUIへ改善 (vj.html)
+日時（2026/08/08 03:24:00）: VJロビー画面におけるPCブラウザ縦画面サイズ時の「VJモードを開始する」ボタン見切れ問題の解決のため、.login-screen への全画面縦スクロール許可 (overflow-y: auto) および VJ向け操作ガイド部分のアコーディオン構造化 (<details open> / <summary>) を実装 (vj.html, style.css)
+日時（2026/08/08 02:55:15）: DJ向け使い方ガイド（index.html）内の「Step 3. DJページを操作する」モックUIを現在の実装（SEND TO VJ + VIBES! ボタンの横並び構成およびレスポンシブ配置）に修正 (index.html)
 日時（2026/08/08 02:34:00）: ワークスペースルール (.agents/AGENTS.md, GEMINI.md) におけるテスト実行環境と保存先ディレクトリの連携関係に関するルールの表記表現を誤解のないようブラッシュアップ (.agents/AGENTS.md, GEMINI.md)
 日時（2026/08/08 02:30:00）: 本プロジェクトにおけるテスト環境として Docker (docker-compose.yml) を利用する規則をワークスペースルール (.agents/AGENTS.md, GEMINI.md) および README.md に定義・明記 (.agents/AGENTS.md, GEMINI.md, README.md)
 日時（2026/08/08 02:25:00）: http://localhost:8787 での動的設定取得(config.php)・セキュリティ(env.php直アクセス保護)・画面描画動作の検証テストを実施し、合格を確認。ワークスペースルール(.agents/AGENTS.md, GEMINI.md)にテスト成果物のtest-results/配下保存規則を追加し、テストスクリプト・検証レポートを作成保存 (test-results/test_config_endpoint.js, test-results/test_summary.json, .agents/AGENTS.md, GEMINI.md)

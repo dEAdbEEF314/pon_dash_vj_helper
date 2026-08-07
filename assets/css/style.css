@@ -600,7 +600,22 @@ input[type="file"] {
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  padding: 20px;
+  padding: 20px 10px;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.lobby-guide-details {
+  transition: all 0.2s ease-in-out;
+}
+
+.lobby-guide-summary {
+  outline: none;
+  transition: color 0.2s ease;
+}
+
+.lobby-guide-summary:hover {
+  color: #ff6699 !important;
 }
 
 .hidden {
