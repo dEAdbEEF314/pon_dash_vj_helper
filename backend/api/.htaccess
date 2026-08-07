@@ -1,8 +1,9 @@
-<Files "env.php">
+# 環境設定ファイル (.env, env.php, env.php.example 等) への直接アクセスを完全遮断
+<FilesMatch "^\.env|env\.php">
     Order allow,deny
     Deny from all
-</Files>
-<Files "env.php.example">
-    Order allow,deny
-    Deny from all
-</Files>
+    # Apache 2.4+ 互換
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+</FilesMatch>

@@ -1,3 +1,7 @@
+日時（2026/08/08 02:34:00）: ワークスペースルール (.agents/AGENTS.md, GEMINI.md) におけるテスト実行環境と保存先ディレクトリの連携関係に関するルールの表記表現を誤解のないようブラッシュアップ (.agents/AGENTS.md, GEMINI.md)
+日時（2026/08/08 02:30:00）: 本プロジェクトにおけるテスト環境として Docker (docker-compose.yml) を利用する規則をワークスペースルール (.agents/AGENTS.md, GEMINI.md) および README.md に定義・明記 (.agents/AGENTS.md, GEMINI.md, README.md)
+日時（2026/08/08 02:25:00）: http://localhost:8787 での動的設定取得(config.php)・セキュリティ(env.php直アクセス保護)・画面描画動作の検証テストを実施し、合格を確認。ワークスペースルール(.agents/AGENTS.md, GEMINI.md)にテスト成果物のtest-results/配下保存規則を追加し、テストスクリプト・検証レポートを作成保存 (test-results/test_config_endpoint.js, test-results/test_summary.json, .agents/AGENTS.md, GEMINI.md)
+日時（2026/08/08 02:16:00）: Pusher公開設定（App Key/Cluster）の二重管理解消のため backend/api/config.php を新設し、assets/js/config.js からの動的取得（アプローチ1）を実装。合わせて backend/api/.htaccess のセキュリティルール強化および README.md の環境構築手順を最新化 (config.php, config.js, dj.js, vj.js, .htaccess, README.md)
 日時（2026/08/08 01:49:00）: CHANGE_HISTORY.md の記載内容を時系列順（最新が一番上）に整列・フォーマット統一。また、ワークスペース内の義務（.agents/AGENTS.md, GEMINI.md）としてCHANGE_HISTORY.mdへの追記を必ずファイル先頭に行うルールを定義
 日時（2026/08/07 05:16:00）: PC/スマホ両対応の最適化およびスマホ画面での1画面納まり（100dvhスクロール分離）・文字サイズ/ボタン視認性・タップ操作性向上の実施 (style.css, dj.html, vj.html, index.html)
 日時（2026/08/07 05:01:00）: CHANGE_HISTORY.mdや直近の実装（手入力SEND機能/Vibes!モーダル、UIレイアウト調整など）に合わせて README.md の機能説明・仕様を最新化

@@ -1,0 +1,26 @@
+{
+  "timestamp": "2026-08-08T02:25:00.000Z",
+  "targetUrl": "http://localhost:8787",
+  "testResults": [
+    {
+      "testName": "GET /backend/api/config.php",
+      "status": "PASS",
+      "returnedData": {
+        "PUSHER_APP_KEY": "424d2b24dc7496e02a55",
+        "PUSHER_CLUSTER": "ap3",
+        "API_BASE": "backend/api"
+      },
+      "verification": "機密情報(PUSHER_SECRET等)を含まず、公開用設定のみが正常返却されることを確認"
+    },
+    {
+      "testName": "GET /backend/api/env.php Direct Access",
+      "status": "PASS",
+      "verification": "ブラウザから直接アクセス時、PHP実行結果(白紙)が返りソースコードや秘密鍵が露出しないことを確認"
+    },
+    {
+      "testName": "Frontend Load (index.html, dj.html, vj.html)",
+      "status": "PASS",
+      "verification": "JSコンソールエラーなし、画面デザインおよび各種要素が正常描画されることを確認"
+    }
+  ]
+}

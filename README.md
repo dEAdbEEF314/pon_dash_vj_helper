@@ -48,6 +48,7 @@ DJが次にかける曲の情報をリアルタイムにVJへ送信し、VJは�
 `backend/api/env.php.example` をコピーして `backend/api/env.php` にリネームし、以下の設定を行ってください。
 
 1. **Pusher 認証情報**: Pusher のダッシュボードから取得した `App ID`, `Key`, `Secret`, `Cluster` を設定します。
+   - ※ 設定した App Key や Cluster は、`backend/api/config.php` を通じてフロントエンドへ自動的に受け渡されるため、`assets/js/config.js` を直接編集する必要はありません。
 2. **HMAC 秘密鍵の生成**: 認証トークン生成用の秘密鍵を設定します。
    - `$HMAC_SECRET = 'YOUR_HMAC_SECRET_KEY';` の文字列を、他人に推測されない長いランダムな文字列に変更してください。
    - 安全な鍵は、ローカルのターミナル等で以下のコマンドを実行して生成できます。
@@ -55,15 +56,6 @@ DJが次にかける曲の情報をリアルタイムにVJへ送信し、VJは�
      ```bash
      php -r "echo bin2hex(random_bytes(32));"
      ```
-3. **assets\js\config.js の編集**
-   - ファイル冒頭の変数を入力してください。
-
-     ```js
-     // Pusher Configuration (Frontend)
-     // ユーザーが取得したApp Keysをここに入力します
-     const PUSHER_APP_KEY = 'App Key'; // App Key (公開情報)
-     const PUSHER_CLUSTER = 'ap3'; // Cluster (公開情報)
-    ```
 
 ### 3. パーミッションとセキュリティの確認
 
@@ -72,13 +64,20 @@ DJが次にかける曲の情報をリアルタイムにVJへ送信し、VJは�
 - `backend/data/` ディレクトリが、Webサーバー（PHP）から**書き込み可能**な権限（環境に応じて `755` や `777` など）になっていること。
 - `backend/api/.htaccess` と `backend/data/.htaccess` がアップロードされており、これらのディレクトリ内のファイル（`env.php` や JSONファイル）にブラウザから直接アクセスできないこと。
 
-### 4. ローカルでの開発・テスト
+### 4. ローカルでの開発・テスト (Docker)
 
-ローカル環境で動作確認を行う場合は、PHPのビルトインサーバーが便利です。
+本プロジェクトの動作検証およびテストは、原則として **Docker (`docker-compose.yml`)** を利用して行います。
+以下のコマンドで Apache + PHP 8.3 のWebサーバーおよび自動テスト用 Playwright コンテナを一括起動できます。
 
 ```bash
-php -S localhost:8000
+# Docker コンテナの起動 (ポート 8000 で起動)
+docker compose up -d
+
+# テストコンテナを利用した Playwright / E2E テストの実行
+docker compose run playwright npx playwright test
 ```
+
+※ クイックな単体確認等で PHP ビルトインサーバーを使用する場合は `php -S localhost:8787` 等で起動可能です。
 
 ### 5. アクセスとログイン
 

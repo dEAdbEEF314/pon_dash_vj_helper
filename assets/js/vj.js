@@ -176,9 +176,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // ----------------------------------------------------
     // 2. Pusher インスタンスの取得 (単一管理)
     // ----------------------------------------------------
-    function getPusher() {
+    async function getPusher() {
+        await fetchAppConfig();
         if (!pusherInstance) {
-            if (typeof PUSHER_APP_KEY === 'undefined' || PUSHER_APP_KEY === 'YOUR_PUSHER_APP_KEY') {
+            if (!PUSHER_APP_KEY || PUSHER_APP_KEY === 'YOUR_PUSHER_APP_KEY') {
                 console.warn("Pusher App Key is not set.");
             }
             pusherInstance = new Pusher(PUSHER_APP_KEY, {
@@ -234,8 +235,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function setupLobbySubscription(code) {
-        const pusher = getPusher();
+    async function setupLobbySubscription(code) {
+        const pusher = await getPusher();
         // 既に購読済みならスキップ
         if (pusher.channel(`lobby-${code}`)) return;
 
@@ -358,7 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function addSession(sessionId, password, loginData, customDjName = null) {
+    async function addSession(sessionId, password, loginData, customDjName = null) {
         if (sessions.has(sessionId)) {
             switchSession(sessionId);
             return;
@@ -380,7 +381,7 @@ document.addEventListener('DOMContentLoaded', () => {
             hasUnread: false
         };
 
-        const pusher = getPusher();
+        const pusher = await getPusher();
         const channel = pusher.subscribe(`session-${sessionId}`);
         sessionObj.channel = channel;
 
@@ -432,14 +433,15 @@ document.addEventListener('DOMContentLoaded', () => {
         updateDisplay();
     }
 
-    function removeSession(sessionId) {
+    async function removeSession(sessionId) {
         const sessionObj = sessions.get(sessionId);
         if (!sessionObj) return;
 
         if (!confirm(`「${sessionObj.djName}」のセッションを削除しますか？`)) return;
 
         if (sessionObj.channel) {
-            getPusher().unsubscribe(`session-${sessionId}`);
+            const pusher = await getPusher();
+            pusher.unsubscribe(`session-${sessionId}`);
         }
         sessions.delete(sessionId);
         saveSessions();

@@ -255,9 +255,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Pusher初期化
-    function initPusher() {
-        // 設定値はconfig.jsから取得
-        if(PUSHER_APP_KEY === 'YOUR_PUSHER_APP_KEY') {
+    async function initPusher() {
+        // バックエンドからの設定非同期読み込みを待機
+        await fetchAppConfig();
+
+        if(!PUSHER_APP_KEY || PUSHER_APP_KEY === 'YOUR_PUSHER_APP_KEY') {
             console.warn("Pusher API Key is not set.");
             // フォールバック用にポーリングを入れる事も可能だが今回はPusher前提
         }
