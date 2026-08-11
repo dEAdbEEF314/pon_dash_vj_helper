@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // セッション復元完了時に画面を切り替える判定
     setTimeout(() => {
-        if (sessions.size > 0 && loginScreen.classList.contains('hidden') === false) {
+        if (sessions.size > 0 && loginScreen.classList.contains('hidden') === false && lobbyScreen.classList.contains('hidden') === true) {
             loginScreen.classList.add('hidden');
             mainApp.classList.remove('hidden');
             const firstSid = Array.from(sessions.keys())[0];
@@ -326,7 +326,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 addSession(sid, vp, data, customDjName);
                 
                 // 初回ログイン処理（UI切り替え）
-                if (loginScreen.classList.contains('hidden') === false) {
+                if (loginScreen.classList.contains('hidden') === false && lobbyScreen.classList.contains('hidden') === true) {
                     loginScreen.classList.add('hidden');
                     mainApp.classList.remove('hidden');
                     switchSession(sid);
@@ -517,7 +517,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderPlaylist() {
         const current = sessions.get(activeSessionId);
-        if (!current) return;
+        if (currentLobbyCode) {
+            const headerCodeTag = document.getElementById('headerLobbyCodeTag');
+            const headerCodeValue = document.getElementById('headerLobbyCodeValue');
+            if (headerCodeTag && headerCodeValue) {
+                headerCodeValue.textContent = currentLobbyCode;
+                headerCodeTag.classList.remove('hidden');
+            }
+        }
 
         playlistContainer.innerHTML = '';
         const { tracks, nowPlayingIdx, sentIdx } = current.state;
@@ -547,7 +554,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const activeIdx = sentIdx !== -1 ? sentIdx : nowPlayingIdx;
         const activeItem = playlistContainer.children[activeIdx];
         if (activeItem) {
-            activeItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const itemTop = activeItem.offsetTop;
+            const itemHeight = activeItem.offsetHeight;
+            const containerHeight = playlistContainer.clientHeight;
+            playlistContainer.scrollTo({
+                top: Math.max(0, itemTop - (containerHeight / 2) + (itemHeight / 2)),
+                behavior: 'smooth'
+            });
         }
     }
 
@@ -624,10 +637,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function flashSendBox(className) {
         const sendBox = document.getElementById('sendTrackBox');
-        if (!sendBox) return;
-        sendBox.classList.remove('is-flashing-danger', 'is-flashing-success');
-        void sendBox.offsetWidth;
-        sendBox.classList.add(className);
+        document.body.classList.remove('is-flashing-danger', 'is-flashing-success');
+        if (sendBox) sendBox.classList.remove('is-flashing-danger', 'is-flashing-success');
+        
+        void document.body.offsetWidth;
+        document.body.classList.add(className);
+        if (sendBox) sendBox.classList.add(className);
+
+        setTimeout(() => {
+            document.body.classList.remove(className);
+            if (sendBox) sendBox.classList.remove(className);
+        }, 5000);
     }
 
     // ----------------------------------------------------

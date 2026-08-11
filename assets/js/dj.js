@@ -1,4 +1,19 @@
 document.addEventListener('DOMContentLoaded', () => {
+    window.flashScreen = function flashScreen(className) {
+        const sendBox = document.getElementById('sendTrackBox');
+        document.body.classList.remove('is-flashing-danger', 'is-flashing-success');
+        if (sendBox) sendBox.classList.remove('is-flashing-danger', 'is-flashing-success');
+        
+        void document.body.offsetWidth;
+        document.body.classList.add(className);
+        if (sendBox) sendBox.classList.add(className);
+
+        setTimeout(() => {
+            document.body.classList.remove(className);
+            if (sendBox) sendBox.classList.remove(className);
+        }, 5000);
+    };
+
     const sessionId = getSessionIdFromUrl();
     if (!sessionId) {
         alert("無効なURLです。事前登録ページからURLを取得してください。");
@@ -90,10 +105,16 @@ document.addEventListener('DOMContentLoaded', () => {
             playlistContainer.appendChild(item);
         });
 
-        // スクロール位置の自動調整（現在再生中へ）
+        // スクロール位置の自動調整（現在再生中へ、コンテナ外部スクロール防止）
         const activeItem = playlistContainer.children[state.nowPlayingIdx];
         if (activeItem) {
-            activeItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const itemTop = activeItem.offsetTop;
+            const itemHeight = activeItem.offsetHeight;
+            const containerHeight = playlistContainer.clientHeight;
+            playlistContainer.scrollTo({
+                top: Math.max(0, itemTop - (containerHeight / 2) + (itemHeight / 2)),
+                behavior: 'smooth'
+            });
         }
     }
 
@@ -118,15 +139,17 @@ document.addEventListener('DOMContentLoaded', () => {
         // 1. Now Playing (UIから削除済みのため変数取得のみ)
         const nowTrack = state.tracks[state.nowPlayingIdx];
 
-        // 3. SEND to VJ (Preview) - タップされた曲のみ表示、未選択時はプレイリストの次の曲
+        // 3. SEND to VJ (Preview) - タップされた曲のみ表示、未選択時は次に送信予定の曲（初回アクセス時は1曲目）
         const previewTitleEl = document.getElementById('previewTitle');
         const previewArtistEl = document.getElementById('previewArtist');
+        const defaultNextIdx = (state.sentIdx === -1) ? 0 : state.nowPlayingIdx + 1;
+        const nextPlaylistTrack = state.tracks[defaultNextIdx];
         if (state.selectedIdx !== -1) {
             const previewTrack = state.tracks[state.selectedIdx];
             applyMarquee(previewTitleEl, previewTrack.title);
             applyMarquee(previewArtistEl, previewTrack.artist);
         } else if (nextPlaylistTrack) {
-            // 未選択時は次の曲をデフォルト表示
+            // 未選択時はデフォルトの曲を表示（初回は1曲目、以降は次の曲）
             applyMarquee(previewTitleEl, nextPlaylistTrack.title);
             applyMarquee(previewArtistEl, nextPlaylistTrack.artist);
         } else {
@@ -277,9 +300,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 badge.style.display = 'inline-block';
                 const sendBox = document.getElementById('sendTrackBox');
                 sendBox.classList.remove('vj-ready-highlight');
-                sendBox.classList.add('is-flashing-success');
+                flashScreen('is-flashing-success');
                 setTimeout(() => { 
-                    sendBox.classList.remove('is-flashing-success');
                     // まだ別の操作でリセットされていなければ色反転を適用
                     if (badge.style.display !== 'none') {
                         sendBox.classList.add('vj-ready-highlight');
@@ -305,7 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // SENDボタン処理 (通常プレイリストからの送信)
     const sendBtn = document.getElementById('sendBtn');
     sendBtn.addEventListener('click', async () => {
-        const targetIdx = state.selectedIdx !== -1 ? state.selectedIdx : state.nowPlayingIdx + 1;
+        const targetIdx = state.selectedIdx !== -1 ? state.selectedIdx : (state.sentIdx === -1 ? 0 : state.nowPlayingIdx + 1);
         if (targetIdx >= state.tracks.length) {
             alert("次に送信する曲がありません。");
             return;
@@ -331,16 +353,10 @@ document.addEventListener('DOMContentLoaded', () => {
             renderPlaylist(); // re-render for selection off
             updateDisplay();
             
-            const sendBox = document.getElementById('sendTrackBox');
-            sendBox.classList.remove('is-flashing-danger');
-            void sendBox.offsetWidth; // reflow
-            sendBox.classList.add('is-flashing-danger');
+            flashScreen('is-flashing-danger');
 
-            // 5秒カウントダウン
-            startCountdown(5, () => {
-                // カウントダウン終了で自動曲送り
-                autoNextTrack(targetIdx);
-            });
+            // ボタンが押されたらすぐに情報更新（自動曲送り）
+            await autoNextTrack(targetIdx);
 
         } catch(e) {
             alert("SENDエラー: " + e.message);
@@ -416,10 +432,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     titleInput.value = '';
                     artistInput.value = '';
 
-                    const sendBox = document.getElementById('sendTrackBox');
-                    sendBox.classList.remove('is-flashing-danger');
-                    void sendBox.offsetWidth;
-                    sendBox.classList.add('is-flashing-danger');
+                    flashScreen('is-flashing-danger');
                 } else {
                     alert("送信に失敗しました");
                 }
@@ -471,4 +484,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }, 1000);
     }
+
+    window.flashScreen = function flashScreen(className) {
+        const sendBox = document.getElementById('sendTrackBox');
+        document.body.classList.remove('is-flashing-danger', 'is-flashing-success');
+        if (sendBox) sendBox.classList.remove('is-flashing-danger', 'is-flashing-success');
+        
+        void document.body.offsetWidth;
+        document.body.classList.add(className);
+        if (sendBox) sendBox.classList.add(className);
+
+        setTimeout(() => {
+            document.body.classList.remove(className);
+            if (sendBox) sendBox.classList.remove(className);
+        }, 5000);
+    };
 });

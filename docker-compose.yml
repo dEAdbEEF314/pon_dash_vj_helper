@@ -1,11 +1,9 @@
-
-
 services:
   app:
     image: php:8.3-apache
     container_name: pdvh-app
     ports:
-      - "8000:80"
+      - "8787:80"
     volumes:
       - ./:/var/www/html
     environment:
@@ -21,4 +19,4 @@ services:
     depends_on:
       - app
     # デフォルトは何もしないで待機（docker-compose runで上書き可能にするためcommandを使用）
-    command: ["tail", "-f", "/dev/null"]
+    command: [ "tail", "-f", "/dev/null" ]

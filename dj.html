@@ -54,14 +54,14 @@
                 <div class="panel-inner-stack">
                     <div class="track-info-box send-track" id="sendTrackBox">
                         <div class="label" id="sendTrackLabel">
-                            VJに通知した曲 (SENT to VJ) 
+                            VJにSENDした曲 (SENT to VJ)
                             <span id="vjReadyBadge" class="badge-ready" style="display:none;">[VJ READY]</span>
                         </div>
                         <div class="track-title" id="sendTitle">-</div>
                         <div class="track-artist" id="sendArtist">-</div>
                     </div>
                     <div class="track-info-box preview-track" id="sendPreviewBox">
-                        <div class="label">VJに通知する曲 (SEND to VJ)</div>
+                        <div class="label">VJにSENDする曲 (SEND to VJ)</div>
                         <div class="track-title" id="previewTitle">-</div>
                         <div class="track-artist" id="previewArtist">-</div>
                     </div>
@@ -75,11 +75,6 @@
                     <button type="button" class="btn btn-vibes" id="openVibesModalBtn">VIBES!</button>
                 </div>
                 <p class="send-hint">※下段のリストから選択してSEND / 「VIBES!」で手入力SEND</p>
-
-                <!-- カウントダウンオーバーレイ -->
-                <div class="countdown-overlay" id="countdownOverlay">
-                    <div class="countdown-number" id="countdownNumber">10</div>
-                </div>
             </div>
 
             <!-- 下段：プレイリスト -->
@@ -116,9 +111,8 @@
                 </div>
                 <div class="search-links" id="djSearchLinksSend">
                     <button type="button" class="btn" data-search="google">Google</button>
-                    <button type="button" class="btn" data-search="google_image">Google 画像</button>
                     <button type="button" class="btn" data-search="youtube">YouTube</button>
-                    <button type="button" class="btn" data-search="niconico">ニコニコ</button>
+                    <button type="button" class="btn" data-search="niconico">ニコニコ動画</button>
                     <button type="button" class="btn" data-search="giphy">GIPHY</button>
                 </div>
             </div>
