@@ -1,16 +1,30 @@
 document.addEventListener('DOMContentLoaded', () => {
     window.flashScreen = function flashScreen(className) {
         const sendBox = document.getElementById('sendTrackBox');
+        const mainApp = document.getElementById('mainApp');
+        const container = document.querySelector('.container');
+        const panels = document.querySelectorAll('.glass-panel');
+
         document.body.classList.remove('is-flashing-danger', 'is-flashing-success');
+        if (mainApp) mainApp.classList.remove('is-flashing-danger', 'is-flashing-success');
+        if (container) container.classList.remove('is-flashing-danger', 'is-flashing-success');
         if (sendBox) sendBox.classList.remove('is-flashing-danger', 'is-flashing-success');
+        panels.forEach(p => p.classList.remove('is-flashing-danger', 'is-flashing-success'));
         
         void document.body.offsetWidth;
+
         document.body.classList.add(className);
+        if (mainApp) mainApp.classList.add(className);
+        if (container) container.classList.add(className);
         if (sendBox) sendBox.classList.add(className);
+        panels.forEach(p => p.classList.add(className));
 
         setTimeout(() => {
             document.body.classList.remove(className);
+            if (mainApp) mainApp.classList.remove(className);
+            if (container) container.classList.remove(className);
             if (sendBox) sendBox.classList.remove(className);
+            panels.forEach(p => p.classList.remove(className));
         }, 5000);
     };
 
@@ -484,19 +498,4 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }, 1000);
     }
-
-    window.flashScreen = function flashScreen(className) {
-        const sendBox = document.getElementById('sendTrackBox');
-        document.body.classList.remove('is-flashing-danger', 'is-flashing-success');
-        if (sendBox) sendBox.classList.remove('is-flashing-danger', 'is-flashing-success');
-        
-        void document.body.offsetWidth;
-        document.body.classList.add(className);
-        if (sendBox) sendBox.classList.add(className);
-
-        setTimeout(() => {
-            document.body.classList.remove(className);
-            if (sendBox) sendBox.classList.remove(className);
-        }, 5000);
-    };
 });

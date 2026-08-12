@@ -1,3 +1,6 @@
+日時（2026/08/12 09:30:44）: DJページ(dj.html)においても画面フラッシュ通知時に画面全体(.container, #mainApp, .glass-panel)へ黒とミントブルーのフラッシュアニメーションを適用し、重複関数定義をクリーンアップ (assets/js/dj.js, assets/js/vj.js, assets/css/style.css)
+日時（2026/08/12 09:11:14）: 通知時の画面フラッシュアニメーションを黒（#000000）とミントブルー（#00ffcc）の間を5秒間で20往復（0.25s x 20回）する仕様に変更 (assets/css/style.css)
+日時（2026/08/12 09:03:16）: AQUOS SH-M24等の実端末におけるフォーカス移動・要素描画時の自動スクロール対策として、.app-header への position: sticky; top: 0; z-index: 100 適用、body.app-page への position: fixed 適用、およびJSによる外枠スクロールキャンセラーを追加 (assets/css/style.css, assets/js/vj.js)
 日時（2026/08/12 06:28:20）: プレイリスト再生中アイテムへの自動スクロール処理で native scrollIntoView により親コンテナ(window/body)全体が画面下へ押し下げられ上部ヘッダー(VJ VIEW/ロビーコード)が見切れていた現象を修正。内部 playlistContainer.scrollTo へ置き換え (assets/js/dj.js, assets/js/vj.js)
 日時（2026/08/12 06:14:20）: VJ VIEWにおける上部ヘッダー（app-header / ロビーコード表示）の非表示CSSを解除して常時表示化、および小画面スマホでのプレイリスト4曲以上表示確保のコンパクトCSS調整を適用 (assets/css/style.css, assets/js/vj.js)
 日時（2026/08/12 05:35:49）: VJロビー画面（#lobbyScreen）でDJプッシュ受信時・セッション復元時に自動的にVJ VIEW操作画面へ遷移してしまう不具合を修正 (assets/js/vj.js)

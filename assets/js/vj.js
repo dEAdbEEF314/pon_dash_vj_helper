@@ -7,6 +7,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('loginForm');
     const mainApp = document.getElementById('mainApp');
     
+    // 実端末（AQUOS SH-M24等）でのフォーカス・レイアウトシフトによる全体系スクロールを強制キャンセル
+    window.addEventListener('scroll', () => {
+        if (window.scrollY !== 0 || window.scrollX !== 0) {
+            window.scrollTo(0, 0);
+        }
+    }, { passive: true });
+
+    if (mainApp) {
+        mainApp.addEventListener('scroll', () => {
+            if (mainApp.scrollTop !== 0 || mainApp.scrollLeft !== 0) {
+                mainApp.scrollTop = 0;
+                mainApp.scrollLeft = 0;
+            }
+        }, { passive: true });
+    }
+    
     const lobbyCodeDisplay = document.getElementById('lobbyCodeDisplay');
     const lobbySessionList = document.getElementById('lobbySessionList');
     const lobbySessionCount = document.getElementById('lobbySessionCount');
@@ -637,16 +653,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function flashSendBox(className) {
         const sendBox = document.getElementById('sendTrackBox');
+        const mainApp = document.getElementById('mainApp');
+        const container = document.querySelector('.container');
+        const panels = document.querySelectorAll('.glass-panel');
+
         document.body.classList.remove('is-flashing-danger', 'is-flashing-success');
+        if (mainApp) mainApp.classList.remove('is-flashing-danger', 'is-flashing-success');
+        if (container) container.classList.remove('is-flashing-danger', 'is-flashing-success');
         if (sendBox) sendBox.classList.remove('is-flashing-danger', 'is-flashing-success');
+        panels.forEach(p => p.classList.remove('is-flashing-danger', 'is-flashing-success'));
         
         void document.body.offsetWidth;
+
         document.body.classList.add(className);
+        if (mainApp) mainApp.classList.add(className);
+        if (container) container.classList.add(className);
         if (sendBox) sendBox.classList.add(className);
+        panels.forEach(p => p.classList.add(className));
 
         setTimeout(() => {
             document.body.classList.remove(className);
+            if (mainApp) mainApp.classList.remove(className);
+            if (container) container.classList.remove(className);
             if (sendBox) sendBox.classList.remove(className);
+            panels.forEach(p => p.classList.remove(className));
         }, 5000);
     }
 
