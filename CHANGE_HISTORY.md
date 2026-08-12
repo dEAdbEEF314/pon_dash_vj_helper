@@ -1,3 +1,4 @@
+日時（2026/08/12 23:17:15）: SEND時のフラッシュ通知をDJ/VJページともに3秒間に合計3回、背景色を黒→青→白→青→黒と滑らかに変更するアニメーションに変更し、解除タイマーを3000msに更新 (assets/css/style.css, assets/js/dj.js, assets/js/vj.js)
 日時（2026/08/12 09:30:44）: DJページ(dj.html)においても画面フラッシュ通知時に画面全体(.container, #mainApp, .glass-panel)へ黒とミントブルーのフラッシュアニメーションを適用し、重複関数定義をクリーンアップ (assets/js/dj.js, assets/js/vj.js, assets/css/style.css)
 日時（2026/08/12 09:11:14）: 通知時の画面フラッシュアニメーションを黒（#000000）とミントブルー（#00ffcc）の間を5秒間で20往復（0.25s x 20回）する仕様に変更 (assets/css/style.css)
 日時（2026/08/12 09:03:16）: AQUOS SH-M24等の実端末におけるフォーカス移動・要素描画時の自動スクロール対策として、.app-header への position: sticky; top: 0; z-index: 100 適用、body.app-page への position: fixed 適用、およびJSによる外枠スクロールキャンセラーを追加 (assets/css/style.css, assets/js/vj.js)

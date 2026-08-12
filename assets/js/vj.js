@@ -677,7 +677,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (container) container.classList.remove(className);
             if (sendBox) sendBox.classList.remove(className);
             panels.forEach(p => p.classList.remove(className));
-        }, 5000);
+        }, 3000);
     }
 
     // ----------------------------------------------------
