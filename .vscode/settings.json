@@ -1,0 +1,24 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^git status --short && git ls-files backend/api/env\\.php backend/api/env\\.php\\.example backend/data \\| sed -n '1,30p' && git check-ignore -v backend/api/env\\.php backend/data/02b237862c8528c4313b2fd0041587ec\\.json \\|\\| true$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^docker compose exec -T app php -l /var/www/html/backend/api/action\\.php && docker compose exec -T app php -l /var/www/html/backend/api/register\\.php && docker compose exec -T app php -l /var/www/html/backend/api/config\\.php && docker compose exec -T app php -l /var/www/html/backend/api/env\\.php\\.example$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^docker compose exec -T app sh -lc \"curl -fsS http://localhost/backend/api/config\\.php\"$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^docker compose exec -T playwright npx playwright test tests/02_api_integration\\.spec\\.js$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^docker compose exec -T playwright npx playwright test$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}

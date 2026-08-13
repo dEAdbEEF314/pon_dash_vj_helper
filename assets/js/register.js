@@ -86,8 +86,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
                 
                 const djUrl = `${baseUrl}dj.html?sid=${result.sessionId}`;
-                // VJ用URLに閲覧許可パスワード(vp)を含めて自動ログイン可能なフルURLにする
-                const vjUrl = `${baseUrl}vj.html?sid=${result.sessionId}&vp=${vjPassword}`;
+                // VJ用URLには認証情報を含めず、VJ側でパスワードを入力する
+                const vjUrl = `${baseUrl}vj.html?sid=${result.sessionId}`;
 
                 document.getElementById('djUrlBox').textContent = djUrl;
                 document.getElementById('vjUrlBox').textContent = vjUrl;
@@ -135,8 +135,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (pushBtn && lobbyInput) {
                     pushBtn.onclick = async () => {
                         const code = lobbyInput.value.trim().toUpperCase();
-                        if (!code || code.length !== 6) {
-                            alert("6文字のロビーコードを入力してください。");
+                        if (!code || code.length !== 10) {
+                            alert("10文字のロビーコードを入力してください。");
                             return;
                         }
 
@@ -150,7 +150,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({
                                     lobbyCode: code,
-                                    vjUrl: vjUrl,
+                                    sessionId: result.sessionId,
+                                    vjPassword,
                                     djName: accountName
                                 })
                             });
@@ -181,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             try {
                                 await navigator.share({
                                     title: `PDVH VJ用リンク (${accountName})`,
-                                    text: `VJ用自動ログインリンクです`,
+                                    text: `VJ用セッションリンクです`,
                                     url: vjUrl
                                 });
                             } catch (err) {
@@ -192,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         } else if (navigator.clipboard) {
                             try {
                                 await navigator.clipboard.writeText(vjUrl);
-                                alert("VJ用URL（自動ログイン付き）をクリップボードにコピーしました！");
+                                alert("VJ用URLをクリップボードにコピーしました！");
                             } catch (err) {
                                 alert("コピーに失敗しました: " + err.message);
                             }

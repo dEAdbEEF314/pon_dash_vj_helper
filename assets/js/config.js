@@ -1,7 +1,8 @@
 // Pusher Configuration (Frontend)
 // 公開設定 (PUSHER_APP_KEY, PUSHER_CLUSTER) は backend/api/config.php から動的取得されます。
 let PUSHER_APP_KEY = ''; 
-let PUSHER_CLUSTER = 'ap3'; 
+let PUSHER_CLUSTER = ''; 
+let SESSION_LIFETIME = 0;
 
 // API Base URL (相対パス)
 const API_BASE = 'backend/api';
@@ -23,6 +24,9 @@ function fetchAppConfig() {
             .then(data => {
                 if (data.PUSHER_APP_KEY) PUSHER_APP_KEY = data.PUSHER_APP_KEY;
                 if (data.PUSHER_CLUSTER) PUSHER_CLUSTER = data.PUSHER_CLUSTER;
+                if (Number.isInteger(data.SESSION_LIFETIME) && data.SESSION_LIFETIME > 0) {
+                    SESSION_LIFETIME = data.SESSION_LIFETIME;
+                }
                 return data;
             })
             .catch(err => {

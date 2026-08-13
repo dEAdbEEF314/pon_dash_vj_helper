@@ -1,4 +1,6 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    await fetchAppConfig();
+
     // UI要素の取得
     const loginScreen = document.getElementById('loginScreen');
     const modeSelectPanel = document.getElementById('modeSelectPanel');
@@ -43,6 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let pusherInstance = null;
     let currentLobbyCode = null;
     let lobbyPollInterval = null;
+    const recoveryKey = 'pdvh.vj.sessions';
 
     // セッション Map<sessionId, SessionObject>
     const sessions = new Map();
@@ -51,29 +54,36 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- LocalStorage ヘルパー ---
     function saveLobbyCode(code) {
         localStorage.setItem('vjLobbyCode', code);
+        localStorage.setItem('vjLobbyCodeSavedAt', String(Date.now()));
     }
     function clearLobbyCode() {
         localStorage.removeItem('vjLobbyCode');
+        localStorage.removeItem('vjLobbyCodeSavedAt');
         currentLobbyCode = null;
     }
     function saveSessions() {
-        const list = [];
-        sessions.forEach((sess, sid) => {
-            list.push({ sid, vp: sess.password, djName: sess.djName });
-        });
-        localStorage.setItem('vjSessions', JSON.stringify(list));
+        const expiresAt = Date.now() + SESSION_LIFETIME * 1000;
+        const saved = Array.from(sessions.values()).map(session => ({
+            sessionId: session.sessionId,
+            djName: session.djName,
+            expiresAt
+        }));
+        localStorage.setItem(recoveryKey, JSON.stringify(saved));
     }
     function loadSavedSessions() {
         try {
-            const saved = localStorage.getItem('vjSessions');
-            if (saved) return JSON.parse(saved);
-        } catch(e) {}
-        return [];
+            const saved = JSON.parse(localStorage.getItem(recoveryKey) || '[]');
+            const valid = Array.isArray(saved) ? saved.filter(item => item.expiresAt > Date.now()) : [];
+            localStorage.setItem(recoveryKey, JSON.stringify(valid));
+            return valid;
+        } catch (error) {
+            localStorage.removeItem(recoveryKey);
+            return [];
+        }
     }
     function removeSavedSessionBySid(sid) {
-        const saved = loadSavedSessions();
-        const filtered = saved.filter(s => s.sid !== sid);
-        localStorage.setItem('vjSessions', JSON.stringify(filtered));
+        const saved = loadSavedSessions().filter(item => item.sessionId !== sid);
+        localStorage.setItem(recoveryKey, JSON.stringify(saved));
     }
 
     // ----------------------------------------------------
@@ -81,30 +91,25 @@ document.addEventListener('DOMContentLoaded', () => {
     // ----------------------------------------------------
     const urlParams = new URLSearchParams(window.location.search);
     const initialSid = urlParams.get('sid');
-    const initialVp = urlParams.get('vp');
-
-    if (initialSid && initialVp) {
-        // パスワード込みURLからの自動ログイン
-        autoLogin(initialSid, initialVp);
-    }
+    const savedRecoverySessions = loadSavedSessions();
+    let recoverySessionId = initialSid || savedRecoverySessions[0]?.sessionId || null;
 
     // 保存されているLobbyの復元
     const savedLobbyCode = localStorage.getItem('vjLobbyCode');
-    if (savedLobbyCode) {
+    const savedLobbyAt = Number(localStorage.getItem('vjLobbyCodeSavedAt') || 0);
+    if (savedLobbyCode && savedLobbyAt > 0 && Date.now() - savedLobbyAt <= SESSION_LIFETIME * 1000) {
         currentLobbyCode = savedLobbyCode;
         lobbyCodeDisplay.textContent = currentLobbyCode;
         // 有効か確認しつつポーリング開始
         resumeLobby(savedLobbyCode);
+    } else if (savedLobbyCode) {
+        clearLobbyCode();
     }
 
-    // 保存されているSessionsの復元
-    const savedSessions = loadSavedSessions();
-    savedSessions.forEach(s => {
-        // URLパラメータで処理中のものは二重に呼ばない
-        if (!initialSid || s.sid !== initialSid) { 
-            autoLogin(s.sid, s.vp, s.djName);
-        }
-    });
+    if (!initialSid && savedRecoverySessions.length > 0) {
+        modeSelectPanel.classList.add('hidden');
+        directLoginForm.classList.remove('hidden');
+    }
 
     // セッション復元完了時に画面を切り替える判定
     setTimeout(() => {
@@ -150,7 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const pwd = document.getElementById('password').value;
-        const sid = initialSid || getSessionIdFromUrl(); // getSessionIdFromUrl() が無い場合はエラーになるので修正
+        const sid = recoverySessionId || getSessionIdFromUrl();
         if (!sid) {
             alert("URLにセッションID (sid) が含まれていません。");
             return;
@@ -240,7 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.success) {
                 setupLobbySubscription(code);
                 if (Array.isArray(data.sessions)) {
-                    data.sessions.forEach(s => handlePushedSession(s.vjUrl, s.djName));
+                    data.sessions.forEach(s => handlePushedSession(s.sessionId, s.inviteToken, s.djName));
                 }
             } else {
                 // 期限切れや削除済みの場合はローカルストレージもクリア
@@ -258,8 +263,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const lobbyChannel = pusher.subscribe(`lobby-${code}`);
         lobbyChannel.bind('session-pushed', (eventData) => {
-            if (eventData.vjUrl) {
-                handlePushedSession(eventData.vjUrl, eventData.djName);
+            if (eventData.sessionId && eventData.inviteToken) {
+                handlePushedSession(eventData.sessionId, eventData.inviteToken, eventData.djName);
             }
         });
 
@@ -279,7 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             const data = await res.json();
             if (data.success && Array.isArray(data.sessions)) {
-                data.sessions.forEach(s => handlePushedSession(s.vjUrl, s.djName));
+                data.sessions.forEach(s => handlePushedSession(s.sessionId, s.inviteToken, s.djName));
             } else if (!data.success && (data.error.includes('expired') || data.error.includes('not found') || data.error.includes('deleted'))) {
                 clearLobbyCode();
                 if (lobbyPollInterval) clearInterval(lobbyPollInterval);
@@ -289,27 +294,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function handlePushedSession(vjUrl, djName) {
+    async function handlePushedSession(sessionId, inviteToken, djName) {
         try {
-            const parsed = parseVjUrl(vjUrl);
-            if (!parsed || !parsed.sid || !parsed.vp) return;
+            if (!sessionId || !inviteToken) return;
 
-            if (sessions.has(parsed.sid)) return;
+            if (sessions.has(sessionId)) return;
 
             const loginRes = await fetch(`${API_BASE}/action.php?action=login&role=vj`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sessionId: parsed.sid, password: parsed.vp })
+                body: JSON.stringify({ sessionId, inviteToken })
             });
             const data = await loginRes.json();
             if (data.success) {
-                addSession(parsed.sid, parsed.vp, data, djName);
+                addSession(sessionId, null, data, djName);
                 
                 if (lobbyEmptyMsg) lobbyEmptyMsg.style.display = 'none';
                 
                 const item = document.createElement('div');
                 item.style.cssText = "display: flex; justify-content: space-between; padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.85rem;";
-                item.innerHTML = `<span style="font-weight: bold; color: #00ffcc;">🎧 ${data.state.accountName || djName}</span><span style="color: #64748b;">連携済み</span>`;
+                const accountLabel = document.createElement('span');
+                accountLabel.style.cssText = 'font-weight: bold; color: #00ffcc;';
+                accountLabel.textContent = `🎧 ${data.state.accountName || djName}`;
+                const linkedLabel = document.createElement('span');
+                linkedLabel.style.color = '#64748b';
+                linkedLabel.textContent = '連携済み';
+                item.append(accountLabel, linkedLabel);
                 lobbySessionList.appendChild(item);
 
                 lobbySessionCount.textContent = sessions.size;
@@ -321,7 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ----------------------------------------------------
-    // 4. 自動ログイン & セッション追加
+    // 4. パスワードログイン & セッション追加
     // ----------------------------------------------------
     async function autoLogin(sid, vp, customDjName = null) {
         try {
@@ -331,8 +341,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ sessionId: sid, password: vp })
             });
             const data = await res.json();
-            if (data.success) {
-                // URLから vp パラメータを除去してブラウザ履歴をクリア
+                if (data.success) {
+                // 旧形式URLに残るvpパラメータをブラウザ履歴から除去
                 const cleanUrl = new URL(window.location.href);
                 if (cleanUrl.searchParams.has('vp')) {
                     cleanUrl.searchParams.delete('vp');
@@ -425,6 +435,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         });
+        channel.bind('session-removed', () => {
+            if (sessions.has(sessionId)) removeSessionLocally(sessionId);
+        });
 
         sessions.set(sessionId, sessionObj);
         saveSessions();
@@ -449,17 +462,15 @@ document.addEventListener('DOMContentLoaded', () => {
         updateDisplay();
     }
 
-    async function removeSession(sessionId) {
+    function removeSessionLocally(sessionId) {
         const sessionObj = sessions.get(sessionId);
         if (!sessionObj) return;
 
-        if (!confirm(`「${sessionObj.djName}」のセッションを削除しますか？`)) return;
-
         if (sessionObj.channel) {
-            const pusher = await getPusher();
-            pusher.unsubscribe(`session-${sessionId}`);
+            pusherInstance?.unsubscribe(`session-${sessionId}`);
         }
         sessions.delete(sessionId);
+        if (activeSessionId === sessionId) activeSessionId = null;
         saveSessions();
 
         if (sessions.size > 0) {
@@ -479,6 +490,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    async function removeSession(sessionId) {
+        const sessionObj = sessions.get(sessionId);
+        if (!sessionObj || !confirm(`「${sessionObj.djName}」のセッションを削除しますか？`)) return;
+
+        try {
+            const res = await fetch(`${API_BASE}/action.php?action=delete_session&role=vj`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId, token: sessionObj.token })
+            });
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || '削除に失敗しました');
+            removeSessionLocally(sessionId);
+        } catch (error) {
+            alert(`削除エラー: ${error.message}`);
+        }
+    }
+
     // ----------------------------------------------------
     // 6. UI描画 (セッションタブ, プレイリスト, ステータス)
     // ----------------------------------------------------
@@ -488,13 +517,21 @@ document.addEventListener('DOMContentLoaded', () => {
         sessions.forEach((sess, sid) => {
             const tab = document.createElement('div');
             tab.className = `session-tab ${sid === activeSessionId ? 'active' : ''}`;
-            
-            let labelHtml = `<span>🎧 ${escapeHtml(sess.djName)}</span>`;
+
+            const label = document.createElement('span');
+            label.textContent = `🎧 ${sess.djName || 'DJ'}`;
+            tab.appendChild(label);
             if (sess.hasUnread && sid !== activeSessionId) {
-                labelHtml += `<span class="badge-unread" title="新曲SEND受信"></span>`;
+                const unreadBadge = document.createElement('span');
+                unreadBadge.className = 'badge-unread';
+                unreadBadge.title = '新曲SEND受信';
+                tab.appendChild(unreadBadge);
             }
-            labelHtml += `<span class="close-btn" title="削除">×</span>`;
-            tab.innerHTML = labelHtml;
+            const closeButton = document.createElement('span');
+            closeButton.className = 'close-btn';
+            closeButton.title = '削除';
+            closeButton.textContent = '×';
+            tab.appendChild(closeButton);
 
             tab.addEventListener('click', (e) => {
                 if (e.target.classList.contains('close-btn')) {
@@ -533,6 +570,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderPlaylist() {
         const current = sessions.get(activeSessionId);
+        if (!current) return;
         if (currentLobbyCode) {
             const headerCodeTag = document.getElementById('headerLobbyCodeTag');
             const headerCodeValue = document.getElementById('headerLobbyCodeValue');
@@ -714,7 +752,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         break;
                 }
                 if (url) {
-                    window.open(url, '_blank');
+                    window.open(url, '_blank', 'noopener,noreferrer');
                 }
             });
         });
@@ -756,11 +794,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('modalAddByUrlBtn').addEventListener('click', async () => {
         const rawUrl = modalUrlInput.value.trim();
         const parsed = parseVjUrl(rawUrl);
-        if (!parsed || !parsed.sid || !parsed.vp) {
-            alert("有効なVJ用URLをペーストしてください (例: vj.html?sid=xxx&vp=1234)");
+        const vp = modalVpInput.value.trim();
+        if (!parsed || !parsed.sid || !vp) {
+            alert("VJ用URLをペーストし、VJ用パスワードを手動入力してください。");
             return;
         }
-        await autoLogin(parsed.sid, parsed.vp);
+        await autoLogin(parsed.sid, vp);
         addSessionModal.classList.add('hidden');
     });
 
@@ -782,8 +821,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const url = new URL(urlStr, window.location.origin);
             const sid = url.searchParams.get('sid');
-            const vp = url.searchParams.get('vp');
-            return { sid, vp };
+            return { sid };
         } catch(e) {
             return null;
         }

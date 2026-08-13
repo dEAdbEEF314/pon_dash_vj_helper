@@ -95,7 +95,7 @@
                 <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; margin-bottom: 16px;">
                     <h3 style="font-size: 0.95rem; margin: 0 0 8px 0; color: #fff;">Step 2. 登録完了 → VJと連携する</h3>
                     <p style="margin: 0 0 10px 0;">
-                        登録完了画面で、VJから口頭で教えてもらった<strong style="color: #00ffcc;">6文字のロビーコード</strong>を入力して「送信」するだけ！<br>
+                        登録完了画面で、VJから口頭で教えてもらった<strong style="color: #00ffcc;">10文字のロビーコード</strong>を入力して「送信」するだけ！<br>
                         VJのPC画面にあなたのプレイリストが自動的に届きます。連絡先交換は不要です。
                     </p>
 
@@ -307,9 +307,9 @@
                     <div class="glass-panel"
                         style="margin-top: 10px; background: rgba(0, 255, 204, 0.05); border: 1px solid rgba(0, 255, 204, 0.3); padding: 12px;">
                         <h3 style="font-size: 1rem; margin-top: 0; color: #00ffcc;">① VJロビーに送る（簡単連携）</h3>
-                        <p style="font-size: 0.8rem; margin-bottom: 8px;">VJから教えてもらった6文字のコードを入力してください</p>
+                        <p style="font-size: 0.8rem; margin-bottom: 8px;">VJから教えてもらった10文字のコードを入力してください</p>
                         <div style="display: flex; flex-direction: column; gap: 8px;">
-                            <input type="text" id="lobbyCodeInput" placeholder="例: A3X7K9" maxlength="6"
+                            <input type="text" id="lobbyCodeInput" placeholder="例: A3X7K9BC2D" maxlength="10"
                                 style="text-transform: uppercase; width: 100%; padding: 8px; font-weight: bold; letter-spacing: 2px; text-align: center;">
                             <button type="button" class="btn btn-primary" id="pushToLobbyBtn"
                                 style="width: 100%; padding: 8px 16px; white-space: nowrap;">送信</button>
@@ -319,7 +319,7 @@
 
                     <div style="margin-top: 20px;">
                         <h3 style="font-size: 1rem; margin-top: 0;">② VJ用 閲覧URL (手動共有)</h3>
-                        <p style="font-size: 0.8rem; margin-bottom: 8px;">※このURLを開くだけで自動ログインできます</p>
+                        <p style="font-size: 0.8rem; margin-bottom: 8px;">※URLを開いた後、登録時のVJ用パスワードを入力してください</p>
                         <div class="url-box" id="vjUrlBox"></div>
                         <div style="display: flex; gap: 8px; margin-bottom: 15px;">
                             <button type="button" id="shareVjUrlBtn" class="btn btn-primary" style="flex: 1;">📤
@@ -327,7 +327,7 @@
                                 コピー</button>
                         </div>
                         <div id="vjQrcode" style="margin-top: 10px; margin-bottom: 15px; text-align: center;"></div>
-                        <a href="#" id="vjLink" class="btn" target="_blank">VJページを別タブで開く</a>
+                        <a href="#" id="vjLink" class="btn" target="_blank" rel="noopener noreferrer">VJページを別タブで開く</a>
                     </div>
                 </div>
             </div>

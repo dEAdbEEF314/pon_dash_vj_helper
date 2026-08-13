@@ -11,12 +11,28 @@
  */
 
 header('Content-Type: application/json; charset=UTF-8');
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: no-referrer');
+header('Cache-Control: no-store');
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
+if ((int)($_SERVER['CONTENT_LENGTH'] ?? 0) > 1048576) {
+    http_response_code(413);
+    echo json_encode(['success' => false, 'error' => 'Request too large']);
+    exit;
+}
+
 // CORS設定 (H-3): 同一オリジンからのリクエストのみ許可
 $allowedOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
-if ($allowedOrigin !== '' && strpos($allowedOrigin, $_SERVER['HTTP_HOST']) !== false) {
+$requestScheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$sameOrigin = $requestScheme . '://' . ($_SERVER['HTTP_HOST'] ?? '');
+if ($allowedOrigin !== '' && !hash_equals($sameOrigin, $allowedOrigin)) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => 'Origin not allowed']);
+    exit;
+}
+if ($allowedOrigin !== '' && hash_equals($sameOrigin, $allowedOrigin)) {
     header("Access-Control-Allow-Origin: {$allowedOrigin}");
 }
 header('Access-Control-Allow-Methods: POST, OPTIONS');
@@ -28,15 +44,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-const DATA_DIR = __DIR__ . '/../data/';
+// Pusher 認証情報・共通設定を外部ファイルから読み込み
+if (file_exists(__DIR__ . '/env.php')) {
+    require_once __DIR__ . '/env.php';
+} else {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'Server configuration error']);
+    exit;
+}
+
+if (!isset($SESSION_LIFETIME) || $SESSION_LIFETIME <= 0) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'Server configuration error']);
+    exit;
+}
+
+define('DATA_DIR', __DIR__ . '/../data/');
+define('SESSION_LIFETIME', $SESSION_LIFETIME);
 
 // ブルートフォース対策の設定 (M-2)
 const MAX_LOGIN_ATTEMPTS = 5;       // 最大試行回数
 const LOCKOUT_DURATION   = 900;     // ロックアウト時間（秒）= 15分
+const LOBBY_CODE_LENGTH  = 10;
+const MAX_LOBBY_URL_LENGTH = 1000;
+const MAX_DJ_NAME_LENGTH = 100;
+const LOBBY_INVITE_LIFETIME = 300;
+const LOBBY_RATE_WINDOW = 60;
+const LOBBY_POLL_RATE_LIMIT = 60;
+const LOBBY_PUSH_RATE_LIMIT = 20;
+const LOBBY_CREATE_RATE_LIMIT = 10;
 
 // セッション有効期限 (L-1)
 // 8時間（28800秒）無操作でファイル自体を物理削除(Garbage Collection)するよう変更
-const SESSION_LIFETIME = 28800;
 
 // ==========================================
 // APIログ出力ヘルパー
@@ -56,26 +95,107 @@ function sendErrorAndExit($errorMsg, $actionName = '') {
     echo json_encode(['success' => false, 'error' => $errorMsg]);
     exit;
 }
+
+function enforceLobbyRateLimit($actionName, $limit) {
+    $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    $rateFile = DATA_DIR . '.rate_' . hash('sha256', $actionName . '|' . $ip) . '.json';
+    $now = time();
+    $rateData = ['windowStart' => $now, 'count' => 0];
+
+    $rateHandle = fopen($rateFile, 'c+');
+    if (!$rateHandle || !flock($rateHandle, LOCK_EX)) {
+        if ($rateHandle) fclose($rateHandle);
+        sendErrorAndExit('Rate limit unavailable');
+    }
+
+    $stored = json_decode(stream_get_contents($rateHandle), true);
+    if (is_array($stored) && ($now - ($stored['windowStart'] ?? 0)) < LOBBY_RATE_WINDOW) {
+        $rateData = $stored;
+    }
+
+    $rateData['count']++;
+    ftruncate($rateHandle, 0);
+    rewind($rateHandle);
+    fwrite($rateHandle, json_encode($rateData));
+    fflush($rateHandle);
+    flock($rateHandle, LOCK_UN);
+    fclose($rateHandle);
+    if ($rateData['count'] > $limit) {
+        header('Retry-After: ' . max(1, LOBBY_RATE_WINDOW - ($now - $rateData['windowStart'])));
+        sendErrorAndExit('Too many lobby requests');
+    }
+}
+
+function removeSessionFromLobbies($sessionId) {
+    foreach (glob(DATA_DIR . 'lobby_*.json') ?: [] as $lobbyFile) {
+        $lobbyFp = fopen($lobbyFile, 'r+');
+        if (!$lobbyFp || !flock($lobbyFp, LOCK_EX)) {
+            if ($lobbyFp) fclose($lobbyFp);
+            continue;
+        }
+
+        $size = filesize($lobbyFile);
+        $lobbyData = json_decode(fread($lobbyFp, $size > 0 ? $size : 1024), true);
+        if (is_array($lobbyData) && is_array($lobbyData['sessions'] ?? null)) {
+            $lobbyData['sessions'] = array_values(array_filter(
+                $lobbyData['sessions'],
+                static fn($item) => ($item['sessionId'] ?? '') !== $sessionId
+            ));
+            ftruncate($lobbyFp, 0);
+            rewind($lobbyFp);
+            fwrite($lobbyFp, json_encode($lobbyData));
+            fflush($lobbyFp);
+        }
+        flock($lobbyFp, LOCK_UN);
+        fclose($lobbyFp);
+    }
+}
+
+function garbageCollectExpiredData() {
+    $now = time();
+    foreach (glob(DATA_DIR . '*.json') ?: [] as $dataFile) {
+        $data = json_decode((string)file_get_contents($dataFile), true);
+        $createdAt = is_array($data) ? ($data['created_at'] ?? 0) : 0;
+        $age = $createdAt > 0 ? $now - $createdAt : $now - (int)filemtime($dataFile);
+        if ($age > SESSION_LIFETIME) {
+            @unlink($dataFile);
+        }
+    }
+}
 // ==========================================
 
-// Pusher 認証情報 & HMAC秘密鍵 (外部ファイルから読み込み)
-if (file_exists(__DIR__ . '/env.php')) {
-    require_once __DIR__ . '/env.php';
-} else {
-    $PUSHER_APP_ID = 'YOUR_PUSHER_APP_ID';
-    $PUSHER_KEY    = 'YOUR_PUSHER_APP_KEY';
-    $PUSHER_SECRET = 'YOUR_PUSHER_SECRET';
-    $PUSHER_CLUSTER= 'ap3';
-    $HMAC_SECRET   = 'CHANGE_THIS_DEFAULT_KEY';
+if (!isset($HMAC_SECRET) || $HMAC_SECRET === '' || $HMAC_SECRET === 'CHANGE_THIS_DEFAULT_KEY') {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'Server configuration error']);
+    exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     sendErrorAndExit('Method not allowed');
 }
 
+garbageCollectExpiredData();
+
 $action = $_GET['action'] ?? '';
 $role = $_GET['role'] ?? ''; // 'dj' or 'vj'
-$input = json_decode(file_get_contents('php://input'), true) ?? [];
+$rawInput = file_get_contents('php://input');
+$input = $rawInput === '' ? [] : json_decode($rawInput, true);
+if ($rawInput !== '' && (json_last_error() !== JSON_ERROR_NONE || !is_array($input))) {
+    sendErrorAndExit('Invalid JSON');
+}
+
+$lobbyActions = ['create_lobby', 'push_to_lobby', 'poll_lobby'];
+if (!in_array($action, $lobbyActions, true) && !in_array($role, ['dj', 'vj'], true)) {
+    sendErrorAndExit('Invalid role');
+}
+
+if ($action === 'poll_lobby') {
+    enforceLobbyRateLimit($action, LOBBY_POLL_RATE_LIMIT);
+} elseif ($action === 'push_to_lobby') {
+    enforceLobbyRateLimit($action, LOBBY_PUSH_RATE_LIMIT);
+} elseif ($action === 'create_lobby') {
+    enforceLobbyRateLimit($action, LOBBY_CREATE_RATE_LIMIT);
+}
 
 // ========================================
 // VJロビー管理アクション (sessionIdを必須としない)
@@ -83,7 +203,7 @@ $input = json_decode(file_get_contents('php://input'), true) ?? [];
 if ($action === 'create_lobby') {
     $chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
     $code = '';
-    for ($i = 0; $i < 6; $i++) {
+    for ($i = 0; $i < LOBBY_CODE_LENGTH; $i++) {
         $code .= $chars[random_int(0, strlen($chars) - 1)];
     }
     
@@ -104,13 +224,55 @@ if ($action === 'create_lobby') {
 }
 
 if ($action === 'push_to_lobby') {
-    $lobbyCode = strtoupper(trim($input['lobbyCode'] ?? ''));
-    $vjUrl = trim($input['vjUrl'] ?? '');
-    $djName = trim($input['djName'] ?? '');
+    $lobbyCodeInput = $input['lobbyCode'] ?? '';
+    $sessionIdInput = $input['sessionId'] ?? '';
+    $vjPasswordInput = $input['vjPassword'] ?? '';
+    $djNameInput = $input['djName'] ?? '';
+    if (!is_string($lobbyCodeInput) || !is_string($sessionIdInput)
+        || !is_string($vjPasswordInput) || !is_string($djNameInput)) {
+        sendErrorAndExit('Invalid parameters');
+    }
+    $lobbyCode = strtoupper(trim($lobbyCodeInput));
+    $sessionId = trim($sessionIdInput);
+    $vjPassword = $vjPasswordInput;
+    $djName = trim($djNameInput);
     
-    if (empty($lobbyCode) || empty($vjUrl)) {
+    if (!preg_match('/^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{10}$/', $lobbyCode)
+        || !preg_match('/^[a-f0-9]{32}$/', $sessionId)
+        || $vjPassword === '' || strlen($vjPassword) > 200
+        || !is_string($djName) || strlen($djName) > MAX_DJ_NAME_LENGTH) {
         sendErrorAndExit('Missing parameters');
     }
+
+    $sessionFile = DATA_DIR . $sessionId . '.json';
+    if (!file_exists($sessionFile)) {
+        sendErrorAndExit('Session not found');
+    }
+    $sessionFp = fopen($sessionFile, 'r+');
+    if (!$sessionFp || !flock($sessionFp, LOCK_EX)) {
+        sendErrorAndExit('Could not lock session file');
+    }
+    $sessionSize = filesize($sessionFile);
+    $sessionData = json_decode(fread($sessionFp, $sessionSize > 0 ? $sessionSize : 1024), true);
+    if (!is_array($sessionData) || !password_verify($vjPassword, $sessionData['vjPasswordHash'] ?? '')) {
+        flock($sessionFp, LOCK_UN);
+        fclose($sessionFp);
+        sendErrorAndExit('Invalid VJ password');
+    }
+    if (time() - ($sessionData['created_at'] ?? 0) > SESSION_LIFETIME) {
+        flock($sessionFp, LOCK_UN);
+        fclose($sessionFp);
+        sendErrorAndExit('Session expired and deleted');
+    }
+
+    $inviteToken = bin2hex(random_bytes(32));
+    $sessionData['lobbyInviteTokenHash'] = hash('sha256', $inviteToken);
+    $sessionData['lobbyInviteTokenExpiresAt'] = time() + LOBBY_INVITE_LIFETIME;
+    ftruncate($sessionFp, 0);
+    rewind($sessionFp);
+    fwrite($sessionFp, json_encode($sessionData));
+    flock($sessionFp, LOCK_UN);
+    fclose($sessionFp);
     
     $lobbyFile = DATA_DIR . 'lobby_' . $lobbyCode . '.json';
     if (!file_exists($lobbyFile)) {
@@ -142,7 +304,8 @@ if ($action === 'push_to_lobby') {
     }
     
     $newItem = [
-        'vjUrl' => $vjUrl,
+        'sessionId' => $sessionId,
+        'inviteToken' => $inviteToken,
         'djName' => $djName !== '' ? $djName : 'DJ',
         'addedAt' => time()
     ];
@@ -158,7 +321,8 @@ if ($action === 'push_to_lobby') {
     if ($PUSHER_APP_ID !== 'YOUR_PUSHER_APP_ID') {
         sendPusherEvent($PUSHER_APP_ID, $PUSHER_KEY, $PUSHER_SECRET, $PUSHER_CLUSTER, "lobby-{$lobbyCode}", 'session-pushed', [
             'action' => 'session-pushed',
-            'vjUrl' => $vjUrl,
+            'sessionId' => $sessionId,
+            'inviteToken' => $inviteToken,
             'djName' => $newItem['djName']
         ]);
     }
@@ -168,7 +332,14 @@ if ($action === 'push_to_lobby') {
 }
 
 if ($action === 'poll_lobby') {
-    $lobbyCode = strtoupper(trim($input['lobbyCode'] ?? ''));
+    $lobbyCodeInput = $input['lobbyCode'] ?? '';
+    if (!is_string($lobbyCodeInput)) {
+        sendErrorAndExit('Invalid lobby code');
+    }
+    $lobbyCode = strtoupper(trim($lobbyCodeInput));
+    if (!preg_match('/^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{10}$/', $lobbyCode)) {
+        sendErrorAndExit('Invalid lobby code');
+    }
     $lobbyFile = DATA_DIR . 'lobby_' . $lobbyCode . '.json';
     
     if (!file_exists($lobbyFile)) {
@@ -186,11 +357,12 @@ if ($action === 'poll_lobby') {
     exit;
 }
 
-if (empty($input['sessionId'])) {
+if (!isset($input['sessionId']) || !is_string($input['sessionId'])
+    || !preg_match('/^[a-f0-9]{32}$/', $input['sessionId'])) {
     sendErrorAndExit('Missing session ID');
 }
 
-$sessionId = basename($input['sessionId']);
+$sessionId = $input['sessionId'];
 $sessionFile = DATA_DIR . $sessionId . '.json';
 
 if (!file_exists($sessionFile)) {
@@ -243,9 +415,19 @@ if ($action === 'login') {
 
     $password = $input['password'] ?? '';
     $hashToVerify = ($role === 'dj') ? $sessionData['djPasswordHash'] : $sessionData['vjPasswordHash'];
+    $inviteToken = $input['inviteToken'] ?? '';
+    $inviteHash = is_string($inviteToken) ? hash('sha256', $inviteToken) : '';
+    $inviteValid = $role === 'vj'
+        && is_string($inviteToken)
+        && isset($sessionData['lobbyInviteTokenHash'], $sessionData['lobbyInviteTokenExpiresAt'])
+        && time() <= $sessionData['lobbyInviteTokenExpiresAt']
+        && hash_equals($sessionData['lobbyInviteTokenHash'], $inviteHash);
     
-    if (password_verify($password, $hashToVerify)) {
+    if ($inviteValid || password_verify($password, $hashToVerify)) {
         $sessionData[$failKey] = 0;
+        if ($inviteValid) {
+            unset($sessionData['lobbyInviteTokenHash'], $sessionData['lobbyInviteTokenExpiresAt']);
+        }
         $token = hash_hmac('sha256', $sessionId . $role, $HMAC_SECRET);
         
         $stateForClient = [
@@ -291,6 +473,23 @@ if (!hash_equals($expectedToken, $token)) {
     flock($fp, LOCK_UN);
     fclose($fp);
     sendErrorAndExit('Unauthorized');
+}
+
+if ($action === 'delete_session') {
+    flock($fp, LOCK_UN);
+    fclose($fp);
+    removeSessionFromLobbies($sessionId);
+    if (!unlink($sessionFile)) {
+        sendErrorAndExit('Could not delete session');
+    }
+    if ($PUSHER_APP_ID !== 'YOUR_PUSHER_APP_ID') {
+        sendPusherEvent($PUSHER_APP_ID, $PUSHER_KEY, $PUSHER_SECRET, $PUSHER_CLUSTER, "session-{$sessionId}", 'session-removed', [
+            'action' => 'session-removed',
+            'sessionId' => $sessionId
+        ]);
+    }
+    echo json_encode(['success' => true]);
+    exit;
 }
 
 // ========================================

@@ -7,26 +7,27 @@
  */
 
 header('Content-Type: application/json; charset=UTF-8');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(204);
-    exit;
-}
-
-// デフォルト値
-$PUSHER_KEY     = 'YOUR_PUSHER_APP_KEY';
-$PUSHER_CLUSTER = 'ap3';
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: no-referrer');
+header('Cache-Control: no-store');
 
 // env.php から設定を読み込み
-if (file_exists(__DIR__ . '/env.php')) {
-    require_once __DIR__ . '/env.php';
+if (!file_exists(__DIR__ . '/env.php')) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'Server configuration error']);
+    exit;
+}
+require_once __DIR__ . '/env.php';
+
+if (!isset($PUSHER_KEY, $PUSHER_CLUSTER, $SESSION_LIFETIME) || $SESSION_LIFETIME <= 0) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'Server configuration error']);
+    exit;
 }
 
 echo json_encode([
     'PUSHER_APP_KEY' => $PUSHER_KEY,
     'PUSHER_CLUSTER' => $PUSHER_CLUSTER,
+    'SESSION_LIFETIME' => $SESSION_LIFETIME,
     'API_BASE'       => 'backend/api'
 ]);

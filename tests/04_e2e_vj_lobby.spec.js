@@ -19,11 +19,11 @@ test.describe('E2E Test: VJ Lobby & Multi-DJ Session Flow', () => {
         // 非同期でコードが生成されるまで待つ
         await vjPage.waitForFunction(() => {
             const code = document.getElementById('lobbyCodeDisplay').textContent.trim();
-            return code && code !== '------' && code.length === 6;
+            return code && code !== '------' && code.length === 10;
         }, { timeout: 10000 });
 
         const lobbyCode = await vjPage.textContent('#lobbyCodeDisplay');
-        expect(lobbyCode.trim()).toMatch(/^[A-Z0-9]{6}$/);
+        expect(lobbyCode.trim()).toMatch(/^[A-Z0-9]{10}$/);
 
         // 2. DJ 1 がロビーコードを指定して事前登録
         await dj1Page.goto(`${host}/index.html`);

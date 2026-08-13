@@ -230,7 +230,7 @@ test.describe('Real Playlist Visual Layout & Operations across Devices', () => {
                                 // ロビーコード生成待ち
                                 await page.waitForFunction(() => {
                                     const code = document.getElementById('lobbyCodeDisplay')?.textContent?.trim();
-                                    return code && code !== '------' && code.length === 6;
+                                    return code && code !== '------' && code.length === 10;
                                 }, { timeout: 8000 }).catch(() => {});
 
                                 const lobbyCode = (await page.textContent('#lobbyCodeDisplay').catch(() => ''))?.trim();
@@ -260,20 +260,25 @@ test.describe('Real Playlist Visual Layout & Operations across Devices', () => {
 
                                 if (lobbyCode && lobbyCode !== '------') {
                                     // DJ 1 および DJ 2 のセッションをロビーへ送信
-                                    await page.evaluate(async ({ code, url1, url2, name1 }) => {
+                                    await page.evaluate(async ({ code, sid1, sid2, name1 }) => {
                                         await fetch(`/backend/api/action.php?action=push_to_lobby`, {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ lobbyCode: code, vjUrl: url1, djName: name1 })
+                                            body: JSON.stringify({ lobbyCode: code, sessionId: sid1, vjPassword: '7777', djName: name1 })
                                         }).catch(() => {});
-                                        if (url2) {
+                                        if (sid2) {
                                             await fetch(`/backend/api/action.php?action=push_to_lobby`, {
                                                 method: 'POST',
                                                 headers: { 'Content-Type': 'application/json' },
-                                                body: JSON.stringify({ lobbyCode: code, vjUrl: url2, djName: 'DJ_GUEST_SET' })
+                                                body: JSON.stringify({ lobbyCode: code, sessionId: sid2, vjPassword: '7777', djName: 'DJ_GUEST_SET' })
                                             }).catch(() => {});
                                         }
-                                    }, { code: lobbyCode, url1: vjUrl, url2: vjUrl2, name1: `SET_${pl.id.toUpperCase()}` }).catch(() => {});
+                                    }, {
+                                        code: lobbyCode,
+                                        sid1: new URL(vjUrl).searchParams.get('sid'),
+                                        sid2: vjUrl2 ? new URL(vjUrl2).searchParams.get('sid') : null,
+                                        name1: `SET_${pl.id.toUpperCase()}`
+                                    }).catch(() => {});
 
                                     // VJロビー画面にDJセッションが反映されるのを待機
                                     await page.waitForFunction(() => {
@@ -296,6 +301,9 @@ test.describe('Real Playlist Visual Layout & Operations across Devices', () => {
                                     await enterVjModeBtn.click({ force: true }).catch(() => {});
                                 } else {
                                     await page.goto(vjUrl);
+                                    await page.click('#showDirectLoginBtn').catch(() => {});
+                                    await page.fill('#password', '7777').catch(() => {});
+                                    await page.click('#loginForm button[type="submit"]').catch(() => {});
                                 }
 
                                 await page.waitForSelector('#mainApp', { state: 'visible', timeout: 5000 }).catch(() => {});
@@ -362,6 +370,9 @@ test.describe('Real Playlist Visual Layout & Operations across Devices', () => {
                             } else {
                                 // 単一VJ画面フォールバック
                                 await page.goto(vjUrl);
+                                await page.click('#showDirectLoginBtn').catch(() => {});
+                                await page.fill('#password', '7777').catch(() => {});
+                                await page.click('#loginForm button[type="submit"]').catch(() => {});
                                 await page.waitForSelector('#mainApp', { state: 'visible' }).catch(() => {});
                                 await checkLayoutFit('05_vj_main');
                                 await page.screenshot({ path: path.join(screenshotDir, '05_vj_main.png') });

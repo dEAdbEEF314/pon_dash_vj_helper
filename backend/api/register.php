@@ -9,12 +9,28 @@
  */
 
 header('Content-Type: application/json; charset=UTF-8');
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: no-referrer');
+header('Cache-Control: no-store');
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
+if ((int)($_SERVER['CONTENT_LENGTH'] ?? 0) > 1048576) {
+    http_response_code(413);
+    echo json_encode(['success' => false, 'error' => 'Request too large']);
+    exit;
+}
+
 // CORS設定 (H-3)
 $allowedOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
-if ($allowedOrigin !== '' && strpos($allowedOrigin, $_SERVER['HTTP_HOST']) !== false) {
+$requestScheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$sameOrigin = $requestScheme . '://' . ($_SERVER['HTTP_HOST'] ?? '');
+if ($allowedOrigin !== '' && !hash_equals($sameOrigin, $allowedOrigin)) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => 'Origin not allowed']);
+    exit;
+}
+if ($allowedOrigin !== '' && hash_equals($sameOrigin, $allowedOrigin)) {
     header("Access-Control-Allow-Origin: {$allowedOrigin}");
 }
 header('Access-Control-Allow-Methods: POST, OPTIONS');
@@ -25,10 +41,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-const DATA_DIR = '../data/';
+if (file_exists(__DIR__ . '/env.php')) {
+    require_once __DIR__ . '/env.php';
+} else {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'Server configuration error']);
+    exit;
+}
+
+if (!isset($SESSION_LIFETIME) || $SESSION_LIFETIME <= 0) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'Server configuration error']);
+    exit;
+}
+
+define('DATA_DIR', '../data/');
 const MAX_TRACKS = 500;        // プレイリストの最大曲数
 const MAX_TITLE_LENGTH = 500;  // 曲名の最大文字数
 const MAX_ARTIST_LENGTH = 200; // アーティスト名の最大文字数
+define('SESSION_LIFETIME', $SESSION_LIFETIME);
+
+function garbageCollectExpiredData() {
+    $now = time();
+    foreach (glob(DATA_DIR . '*.json') ?: [] as $dataFile) {
+        $data = json_decode((string)file_get_contents($dataFile), true);
+        $createdAt = is_array($data) ? ($data['created_at'] ?? 0) : 0;
+        $age = $createdAt > 0 ? $now - $createdAt : $now - (int)filemtime($dataFile);
+        if ($age > SESSION_LIFETIME) {
+            @unlink($dataFile);
+        }
+    }
+}
+
+garbageCollectExpiredData();
 
 // データディレクトリが存在しなければ作成
 if (!file_exists(DATA_DIR)) {
@@ -44,7 +89,16 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $input = json_decode(file_get_contents('php://input'), true);
 
-if (!$input || empty($input['accountName']) || empty($input['djPassword']) || empty($input['vjPassword']) || empty($input['tracks'])) {
+if (!is_array($input)
+    || !isset($input['accountName'], $input['djPassword'], $input['vjPassword'], $input['tracks'])
+    || !is_string($input['accountName'])
+    || !is_string($input['djPassword'])
+    || !is_string($input['vjPassword'])
+    || !preg_match('/^[A-Za-z0-9_-]{1,100}$/', $input['accountName'])
+    || strlen($input['djPassword']) > 200
+    || strlen($input['vjPassword']) > 200
+    || $input['djPassword'] === ''
+    || $input['vjPassword'] === '') {
     echo json_encode(['success' => false, 'error' => 'Invalid parameters']);
     exit;
 }
@@ -87,7 +141,7 @@ foreach ($input['tracks'] as $i => $track) {
             MAX_TITLE_LENGTH
         ),
         'artist' => safe_truncate(
-            $track['artist'] ?? 'Unknown',
+            isset($track['artist']) && is_string($track['artist']) ? $track['artist'] : 'Unknown',
             MAX_ARTIST_LENGTH
         )
     ];

@@ -40,10 +40,22 @@ test.describe('E2E Test: Single Session Flow (Register -> DJ -> VJ)', () => {
         await djPage.fill('#password', '8888');
         await djPage.click('button[type="submit"]');
         await djPage.waitForSelector('#mainApp', { state: 'visible' });
+        const djRecovery = await djPage.evaluate(() => JSON.parse(localStorage.getItem('pdvh.dj.session')));
+        expect(djRecovery.sessionId).toMatch(/^[a-f0-9]{32}$/);
+        expect(djRecovery.expiresAt).toBeGreaterThan(Date.now());
+        expect(djRecovery).not.toHaveProperty('password');
 
         // 3. VJ画面 ログイン
         await vjPage.goto(vjUrl.trim());
+        await vjPage.click('#showDirectLoginBtn');
+        await vjPage.fill('#password', '7777');
+        await vjPage.click('button[type="submit"]');
         await vjPage.waitForSelector('#mainApp', { state: 'visible' });
+        expect(await vjPage.evaluate(() => localStorage.getItem('vjSessions'))).toBeNull();
+        const vjRecovery = await vjPage.evaluate(() => JSON.parse(localStorage.getItem('pdvh.vj.sessions')));
+        expect(vjRecovery[0].sessionId).toBe(djRecovery.sessionId);
+        expect(vjRecovery[0].expiresAt).toBeGreaterThan(Date.now());
+        expect(vjRecovery[0]).not.toHaveProperty('password');
 
         // 4. DJが「SEND TO VJ」を押下
         await djPage.click('#sendBtn');

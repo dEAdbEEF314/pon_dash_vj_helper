@@ -54,11 +54,13 @@ DJがセッションを開始するための事前設定画面です。
   - セッション名 (DJ名 / イベント名等)
   - 操作用パスワード (DJ/VJ画面アクセス用)
   - プレイリスト入力: Rekordbox, djay 等からエクスポートした m3u8 / XML / CSV / TXT ファイルのアップロード。
-  - VJロビーコード (任意・6桁): VJが作成したロビーコードを入力することで自動連携。
+  - VJロビーコード (任意・10文字): VJが作成したロビーコードを入力することで自動連携。
 
 - **機能**:
   - プレイリスト構文解析 (`parser.js`): トラック番号、曲名、アーティスト名を自動抽出。
-  - 登録完了後、DJ用URL (`dj.html?s={session_id}`) および VJ用URL (`vj.html?s={session_id}`) を発行。
+  - 登録完了後、DJ用URL (`dj.html?sid={session_id}`) およびVJ用URL (`vj.html?sid={session_id}`)を発行。パスワードはURLに含めず、画面で入力。
+  - URLを失った場合も、同一ブラウザに保存されたセッションIDを8時間以内なら復元し、パスワード再入力で復帰。
+  - DJは画面の削除ボタンから、VJはセッションタブの削除操作から、サーバー上のセッションとプレイリストを手動削除可能。
   - トップページの「VJの方はこちらから」リンクより VJ専用トップページ/ロビー画面へ遷移可能。
 
 ### 3.2 DJ操作画面 (`dj.html` / `dj.js`)
@@ -72,7 +74,8 @@ DJブースでの片手操作・高視認性を追求したUI。
 ### 3.3 VJ操作画面 / VJロビー (`vj.html` / `vj.js`)
 VJの素材検索と進捗管理を最大効率化するUI。
 - **ロビー機能**:
-  - ワンクリックで6桁のロビーコードを発行。
+  - ワンクリックで10文字のロビーコードを発行。
+  - ロビーコードとセッション復帰情報は最大8時間でローカルから自動削除。パスワードや認証トークンは保存しない。
   - 複数のDJセッションを上部「タブ」で切り替え・同時追跡。
 - **受信 ＆ フラッシュ通知**:
   - DJがSENDした曲を受信すると、「DJからSENDされた曲」エリアが更新され、**画面全体が5秒間フラッシュ（イエロー/ピンク等）**。
@@ -92,13 +95,14 @@ VJの素材検索と進捗管理を最大効率化するUI。
 | エンドポイント | メソッド | 説明 |
 | :--- | :--- | :--- |
 | `backend/api/register.php` | `POST` | セッション新規登録およびVJロビーコード紐付け |
-| `backend/api/action.php` | `POST` / `GET` | DJ/VJのアクション送信（SEND, VIBES, READY, STATUS取得等） |
+| `backend/api/action.php` | `POST` | DJ/VJのアクション送信、セッション削除、ロビー操作 |
 | `backend/api/config.php` | `GET` | Pusher App Key や Cluster 等のフロント用設定取得 |
 
 ### 4.2 アクションAPI (`action.php`) の動作仕様
 - `action=send`: トラックIDを指定してVJへ送信。
 - `action=vibes`: 手入力の曲名・アーティスト名を割込み送信 (`is_vibes: true`)。
 - `action=ready`: 指定トラックの素材準備完了状態を設定。
+- `action=delete_session`: 認証済みのDJ/VJがセッションJSON、プレイリスト、ロビー参照を削除。
 - `action=status`: 現在のセッションステート（全トラック情報・現在選択曲・READY状態等）をJSONで取得。
 
 ### 4.3 Pusher リアルタイムイベント仕様
@@ -107,6 +111,7 @@ VJの素材検索と進捗管理を最大効率化するUI。
   - `update-track`: 曲のSEND通知（VJ画面更新）
   - `update-ready`: VJのREADY通知（DJ画面更新）
   - `lobby-update`: VJロビーへの新規DJ追加通知
+  - `session-removed`: セッション削除通知。接続中のVJタブからも自動削除。
 
 ---
 
@@ -131,7 +136,7 @@ VJの素材検索と進捗管理を最大効率化するUI。
 
 - **Pusher 認証情報**: `APP_ID`, `KEY`, `SECRET`, `CLUSTER`
 - **HMAC 秘密鍵 (`$HMAC_SECRET`)**: 認証トークンおよびデータ改ざん検証用の暗号鍵。
-- **アクセス制御**: `backend/api/.htaccess` および `backend/data/.htaccess` により、JSONデータファイルへの直接HTTPアクセスを遮断。
+- **アクセス制御**: `backend/api/.htaccess` および `backend/data/.htaccess` により、設定・JSONデータファイルへの直接HTTPアクセスを遮断。APIアクセス時には作成から8時間を超えたJSONを自動削除。
 
 ---
 
@@ -174,7 +179,7 @@ VJの素材検索と進捗管理を最大効率化するUI。
 |  1. 単体テスト (Unit)           | parser.js のファイル構文解析検証    |
 |  2. API統合テスト (Integration)  | PHPバックエンド (register/action)   |
 |  3. シナリオE2E (Single Session)| DJ・VJ間の選曲/READY一巡フロー     |
-|  4. シナリオE2E (VJ Lobby)      | 6桁コード生成 & 複数DJ接続         |
+|  4. シナリオE2E (VJ Lobby)      | 10文字コード生成 & 複数DJ接続      |
 |  5. UI仕様適合テスト (Alignment)| PC 450px枠 / 全画面フラッシュ / 4ボタン|
 +-------------------------------------------------------------------+
 ```
@@ -185,8 +190,8 @@ VJの素材検索と進捗管理を最大効率化するUI。
 | :--- | :--- | :--- | :---: |
 | **単体テスト** | [`tests/01_parser_unit.spec.js`](file:///workspace/pon_dash_vj_helper/tests/01_parser_unit.spec.js) | M3U/M3U8, CSV, XML (Rekordbox), TXT ファイル解析ロジックの精度検証 | 4 |
 | **API統合テスト** | [`tests/02_api_integration.spec.js`](file:///workspace/pon_dash_vj_helper/tests/02_api_integration.spec.js) | `config.php`, `register.php` (セッション発行), `action.php` (SEND/VIBES/READY) 端点動作 | 3 |
-| **E2E シナリオ (単一)** | [`tests/03_e2e_single_session.spec.js`](file:///workspace/pon_dash_vj_helper/tests/03_e2e_single_session.spec.js) | 事前登録 〜 DJログイン 〜 VJ自動ログイン 〜 SEND 〜 READY フィードバックの一巡テスト | 1 |
-| **E2E シナリオ (ロビー)** | [`tests/04_e2e_vj_lobby.spec.js`](file:///workspace/pon_dash_vj_helper/tests/04_e2e_vj_lobby.spec.js) | VJロビーコード発行 (6桁) 〜 DJロビーコード連携 〜 ロビー画面接続検証 | 1 |
+| **E2E シナリオ (単一)** | [`tests/03_e2e_single_session.spec.js`](file:///workspace/pon_dash_vj_helper/tests/03_e2e_single_session.spec.js) | 事前登録 〜 DJ/VJログイン 〜 SEND 〜 READY フィードバックの一巡テスト | 1 |
+| **E2E シナリオ (ロビー)** | [`tests/04_e2e_vj_lobby.spec.js`](file:///workspace/pon_dash_vj_helper/tests/04_e2e_vj_lobby.spec.js) | VJロビーコード発行 (10文字) 〜 DJロビーコード連携 〜 ロビー画面接続検証 | 1 |
 | **UI仕様適合テスト** | [`tests/spec_alignment.spec.js`](file:///workspace/pon_dash_vj_helper/tests/spec_alignment.spec.js) | PC 450pxフレーム枠、素材検索4ボタン、画面全体フラッシュクラス発火検証 | 1 |
 
 ### 8.2 一括テスト実行コマンド

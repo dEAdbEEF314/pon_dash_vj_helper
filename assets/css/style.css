@@ -167,6 +167,44 @@ body.app-page h3 {
   line-height: 1;
 }
 
+.dj-header {
+  margin-bottom: 2px;
+  padding: 2px 0;
+  flex: 0 0 auto;
+}
+
+.dj-header-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.dj-header h1 {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  text-align: left;
+}
+
+.dj-header #deleteSessionBtn {
+  flex: 0 0 auto;
+  width: auto;
+  min-height: 34px;
+  padding: 6px 10px;
+  border-width: 1px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.dj-header > p {
+  margin: 2px 0 0;
+  text-align: left;
+  font-size: 0.78rem;
+}
+
 .lobby-code-badge {
   background: rgba(0, 153, 51, 0.2);
   border: 1px solid #00cc44;
@@ -788,10 +826,12 @@ body.app-page .container {
 }
 
 /* app-page内のapp-headerは表示を維持・画面最上部に固定（VJ VIEWロゴ・ロビーコード表示用） */
-body.app-page .container > header.app-header {
+body.app-page .container > header.app-header,
+body.app-page .container > header.dj-header {
   display: flex !important;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
   margin-bottom: 2px;
   padding: 2px 0;
   flex: 0 0 auto;
@@ -802,6 +842,12 @@ body.app-page .container > header.app-header {
   backdrop-filter: blur(8px);
 }
 
+body.app-page .container > header.app-header {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
 /* 画面縦幅が小さいスマホ向けの微調整 (ヘッダー常時表示 & プレイリスト4曲以上確保) */
 @media (max-height: 740px) {
   body.app-page .container {
@@ -810,6 +856,14 @@ body.app-page .container > header.app-header {
   }
   .app-header h1 {
     font-size: 1.1rem;
+  }
+  .dj-header h1 {
+    font-size: 1.1rem;
+  }
+  .dj-header #deleteSessionBtn {
+    min-height: 30px;
+    padding: 4px 8px;
+    font-size: 0.7rem;
   }
   .lobby-code-badge {
     padding: 2px 6px;

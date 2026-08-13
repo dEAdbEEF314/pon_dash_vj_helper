@@ -1,4 +1,6 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    await fetchAppConfig();
+
     window.flashScreen = function flashScreen(className) {
         const sendBox = document.getElementById('sendTrackBox');
         const mainApp = document.getElementById('mainApp');
@@ -28,7 +30,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 3000);
     };
 
-    const sessionId = getSessionIdFromUrl();
+    const recoveryKey = 'pdvh.dj.session';
+    let savedRecovery = null;
+    try {
+        savedRecovery = JSON.parse(localStorage.getItem(recoveryKey) || 'null');
+    } catch (error) {
+        localStorage.removeItem(recoveryKey);
+    }
+    const savedSessionId = savedRecovery && savedRecovery.expiresAt > Date.now() ? savedRecovery.sessionId : null;
+    if (!savedSessionId) localStorage.removeItem(recoveryKey);
+    const sessionId = getSessionIdFromUrl() || savedSessionId;
     if (!sessionId) {
         alert("無効なURLです。事前登録ページからURLを取得してください。");
         return;
@@ -49,6 +60,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let token = '';
 
+    document.getElementById('deleteSessionBtn').addEventListener('click', async () => {
+        if (!token || !confirm('このセッションとプレイリストを削除しますか？')) return;
+        try {
+            const res = await fetch(`${API_BASE}/action.php?action=delete_session&role=dj`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId, token })
+            });
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || '削除に失敗しました');
+            localStorage.removeItem(recoveryKey);
+            window.location.href = 'index.html';
+        } catch (error) {
+            alert(`削除エラー: ${error.message}`);
+        }
+    });
+
     // ログイン処理
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -63,6 +91,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             if (data.success) {
                 token = data.token; // 認証トークン
+                localStorage.setItem(recoveryKey, JSON.stringify({
+                    sessionId,
+                    accountName: data.state.accountName,
+                    expiresAt: Date.now() + SESSION_LIFETIME * 1000
+                }));
                 loginScreen.classList.add('hidden');
                 mainApp.classList.remove('hidden');
                 document.getElementById('sessionNameDisplay').textContent = "Playlist: " + data.state.accountName;
@@ -285,7 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         break;
                 }
                 if (url) {
-                    window.open(url, '_blank');
+                    window.open(url, '_blank', 'noopener,noreferrer');
                 }
             });
         });
