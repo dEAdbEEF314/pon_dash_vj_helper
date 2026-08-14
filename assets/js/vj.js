@@ -100,6 +100,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (savedLobbyCode && savedLobbyAt > 0 && Date.now() - savedLobbyAt <= SESSION_LIFETIME * 1000) {
         currentLobbyCode = savedLobbyCode;
         lobbyCodeDisplay.textContent = currentLobbyCode;
+        updateVdjRegisterLink();
         // 有効か確認しつつポーリング開始
         resumeLobby(savedLobbyCode);
     } else if (savedLobbyCode) {
@@ -140,6 +141,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         lobbyScreen.classList.remove('hidden');
         startLobby();
     });
+
+    function updateVdjRegisterLink() {
+        const link = document.getElementById('vdjRegisterLink');
+        if (link && currentLobbyCode) {
+            link.href = `dj-register.html?lobby=${encodeURIComponent(currentLobbyCode)}`;
+        }
+    }
 
     document.getElementById('showDirectLoginBtn').addEventListener('click', () => {
         modeSelectPanel.classList.add('hidden');
@@ -219,11 +227,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
         try {
-            const res = await fetch(`${API_BASE}/action.php?action=create_lobby`, { method: 'POST' });
-            const data = await res.json();
+            const data = await apiRequest('action.php?action=create_lobby', { method: 'POST' });
             if (data.success) {
                 currentLobbyCode = data.lobbyCode;
                 lobbyCodeDisplay.textContent = currentLobbyCode;
+                updateVdjRegisterLink();
                 saveLobbyCode(currentLobbyCode);
                 setupLobbySubscription(currentLobbyCode);
             } else {
@@ -236,12 +244,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function resumeLobby(code) {
         try {
-            const res = await fetch(`${API_BASE}/action.php?action=poll_lobby`, {
+            const data = await apiRequest('action.php?action=poll_lobby', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ lobbyCode: code })
             });
-            const data = await res.json();
             if (data.success) {
                 setupLobbySubscription(code);
                 if (Array.isArray(data.sessions)) {
@@ -277,15 +283,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function pollLobbySessions(code) {
         if (!code) return;
         try {
-            const res = await fetch(`${API_BASE}/action.php?action=poll_lobby`, {
+            const data = await apiRequest('action.php?action=poll_lobby', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ lobbyCode: code })
             });
-            const data = await res.json();
             if (data.success && Array.isArray(data.sessions)) {
                 data.sessions.forEach(s => handlePushedSession(s.sessionId, s.inviteToken, s.djName));
-            } else if (!data.success && (data.error.includes('expired') || data.error.includes('not found') || data.error.includes('deleted'))) {
+            } else if (
+                !data.success
+                && ['expired', 'not found', 'deleted'].some(term => (data.error || '').includes(term))
+            ) {
                 clearLobbyCode();
                 if (lobbyPollInterval) clearInterval(lobbyPollInterval);
             }
@@ -300,12 +307,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (sessions.has(sessionId)) return;
 
-            const loginRes = await fetch(`${API_BASE}/action.php?action=login&role=vj`, {
+            const data = await apiRequest('action.php?action=login&role=vj', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ sessionId, inviteToken })
             });
-            const data = await loginRes.json();
             if (data.success) {
                 addSession(sessionId, null, data, djName);
                 
@@ -335,12 +340,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ----------------------------------------------------
     async function autoLogin(sid, vp, customDjName = null) {
         try {
-            const res = await fetch(`${API_BASE}/action.php?action=login&role=vj`, {
+            const data = await apiRequest('action.php?action=login&role=vj', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ sessionId: sid, password: vp })
             });
-            const data = await res.json();
                 if (data.success) {
                 // 旧形式URLに残るvpパラメータをブラウザ履歴から除去
                 const cleanUrl = new URL(window.location.href);
@@ -495,13 +498,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!sessionObj || !confirm(`「${sessionObj.djName}」のセッションを削除しますか？`)) return;
 
         try {
-            const res = await fetch(`${API_BASE}/action.php?action=delete_session&role=vj`, {
+            await apiRequest('action.php?action=delete_session&role=vj', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ sessionId, token: sessionObj.token })
             });
-            const data = await res.json();
-            if (!data.success) throw new Error(data.error || '削除に失敗しました');
             removeSessionLocally(sessionId);
         } catch (error) {
             alert(`削除エラー: ${error.message}`);
@@ -840,9 +840,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             const current = sessions.get(activeSessionId);
             if (!current) return;
             try {
-                await fetch(`${API_BASE}/action.php?action=ready&role=vj`, {
+                await apiRequest('action.php?action=ready&role=vj', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ sessionId: current.sessionId, token: current.token })
                 });
                 flashSendBox('is-flashing-success');

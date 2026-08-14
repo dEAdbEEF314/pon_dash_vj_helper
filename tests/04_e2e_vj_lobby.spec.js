@@ -26,7 +26,7 @@ test.describe('E2E Test: VJ Lobby & Multi-DJ Session Flow', () => {
         expect(lobbyCode.trim()).toMatch(/^[A-Z0-9]{10}$/);
 
         // 2. DJ 1 がロビーコードを指定して事前登録
-        await dj1Page.goto(`${host}/index.html`);
+        await dj1Page.goto(`${host}/dj-register.html`);
         await dj1Page.fill('#accountName', 'DJ_ALPHA_SET');
         await dj1Page.fill('#djPassword', '1111');
         await dj1Page.fill('#vjPassword', '2222');

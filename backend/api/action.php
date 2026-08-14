@@ -12,7 +12,10 @@
 
 header('Content-Type: application/json; charset=UTF-8');
 header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: DENY');
 header('Referrer-Policy: no-referrer');
+header('Permissions-Policy: camera=(), microphone=(), geolocation=()');
+header("Content-Security-Policy: default-src 'none'; frame-ancestors 'none'");
 header('Cache-Control: no-store');
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
@@ -24,16 +27,18 @@ if ((int)($_SERVER['CONTENT_LENGTH'] ?? 0) > 1048576) {
 }
 
 // CORS設定 (H-3): 同一オリジンからのリクエストのみ許可
-$allowedOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
+$allowedOrigin = rtrim(trim((string)($_SERVER['HTTP_ORIGIN'] ?? '')), '/');
 $requestScheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-$sameOrigin = $requestScheme . '://' . ($_SERVER['HTTP_HOST'] ?? '');
-if ($allowedOrigin !== '' && !hash_equals($sameOrigin, $allowedOrigin)) {
+$requestHost = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
+$sameOrigin = $requestHost !== '' ? $requestScheme . '://' . $requestHost : '';
+if ($allowedOrigin !== '' && ($sameOrigin === '' || !hash_equals($sameOrigin, $allowedOrigin))) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Origin not allowed']);
     exit;
 }
-if ($allowedOrigin !== '' && hash_equals($sameOrigin, $allowedOrigin)) {
+if ($allowedOrigin !== '') {
     header("Access-Control-Allow-Origin: {$allowedOrigin}");
+    header('Vary: Origin');
 }
 header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
@@ -62,6 +67,13 @@ if (!isset($SESSION_LIFETIME) || $SESSION_LIFETIME <= 0) {
 define('DATA_DIR', __DIR__ . '/../data/');
 define('SESSION_LIFETIME', $SESSION_LIFETIME);
 
+function safeTruncate($value, $maxLength) {
+    if (function_exists('mb_substr')) {
+        return mb_substr($value, 0, $maxLength, 'UTF-8');
+    }
+    return substr($value, 0, $maxLength);
+}
+
 // ブルートフォース対策の設定 (M-2)
 const MAX_LOGIN_ATTEMPTS = 5;       // 最大試行回数
 const LOCKOUT_DURATION   = 900;     // ロックアウト時間（秒）= 15分
@@ -84,7 +96,10 @@ function apiLog($actionName, $message) {
     $logFile = DATA_DIR . 'api.log';
     $ip = $_SERVER['REMOTE_ADDR'] ?? 'Unknown';
     $timestamp = date('Y-m-d H:i:s');
-    $logMsg = "[{$timestamp}] [IP: {$ip}] Action: {$actionName} - {$message}\n";
+    $safeAction = preg_replace('/[^a-zA-Z0-9_.-]/', '_', (string)$actionName);
+    $safeMessage = preg_replace('/[\r\n]+/', ' ', (string)$message);
+    $safeMessage = preg_replace('/(password|token|secret|inviteToken)\s*[:=].*/i', '$1=[redacted]', $safeMessage);
+    $logMsg = "[{$timestamp}] [IP: {$ip}] Action: {$safeAction} - {$safeMessage}\n";
     file_put_contents($logFile, $logMsg, FILE_APPEND | LOCK_EX);
 }
 
@@ -423,12 +438,13 @@ if ($action === 'login') {
         && time() <= $sessionData['lobbyInviteTokenExpiresAt']
         && hash_equals($sessionData['lobbyInviteTokenHash'], $inviteHash);
     
-    if ($inviteValid || password_verify($password, $hashToVerify)) {
+    if ($inviteValid || (is_string($password) && strlen($password) <= 200 && password_verify($password, $hashToVerify))) {
         $sessionData[$failKey] = 0;
         if ($inviteValid) {
             unset($sessionData['lobbyInviteTokenHash'], $sessionData['lobbyInviteTokenExpiresAt']);
         }
-        $token = hash_hmac('sha256', $sessionId . $role, $HMAC_SECRET);
+        $token = bin2hex(random_bytes(32));
+        $sessionData[$role . 'AuthTokenHash'] = password_hash($token, PASSWORD_DEFAULT);
         
         $stateForClient = [
             'accountName' => $sessionData['accountName'],
@@ -468,8 +484,8 @@ if ($action === 'login') {
 // 認証チェック (login以外のアクション)
 // ========================================
 $token = $input['token'] ?? '';
-$expectedToken = hash_hmac('sha256', $sessionId . $role, $HMAC_SECRET); 
-if (!hash_equals($expectedToken, $token)) {
+$tokenHash = $sessionData[$role . 'AuthTokenHash'] ?? '';
+if (!is_string($token) || $tokenHash === '' || strlen($token) > 200 || !password_verify($token, $tokenHash)) {
     flock($fp, LOCK_UN);
     fclose($fp);
     sendErrorAndExit('Unauthorized');
@@ -498,13 +514,14 @@ if ($action === 'delete_session') {
 $eventPayload = null;
 
 if ($action === 'send' && $role === 'dj') {
-    $sendIdx = (int)($input['sendIdx'] ?? -1);
+    $sendIdx = filter_var($input['sendIdx'] ?? null, FILTER_VALIDATE_INT, ['options' => ['default' => -1]]);
     $customTrack = $input['customTrack'] ?? null;
     
-    if ($customTrack && !empty($customTrack['title'])) {
-        $cleanTitle = htmlspecialchars(trim($customTrack['title']), ENT_QUOTES, 'UTF-8');
-        $cleanArtist = htmlspecialchars(trim($customTrack['artist'] ?? ''), ENT_QUOTES, 'UTF-8');
-        if (empty($cleanArtist)) $cleanArtist = '-';
+    if (is_array($customTrack) && isset($customTrack['title']) && is_string($customTrack['title']) && trim($customTrack['title']) !== '') {
+        $cleanTitle = safeTruncate(trim($customTrack['title']), 500);
+        $cleanArtist = isset($customTrack['artist']) && is_string($customTrack['artist'])
+            ? safeTruncate(trim($customTrack['artist']), 200) : '';
+        if ($cleanArtist === '') $cleanArtist = '-';
         
         $sessionData['customTrack'] = [
             'title' => $cleanTitle,
@@ -521,17 +538,30 @@ if ($action === 'send' && $role === 'dj') {
         unset($sessionData['customTrack']);
         $sessionData['sentIdx'] = $sendIdx;
         $eventPayload = ['action' => 'send', 'sentIdx' => $sendIdx];
+    } else {
+        flock($fp, LOCK_UN);
+        fclose($fp);
+        sendErrorAndExit('Invalid send parameters');
     }
 } 
 elseif ($action === 'autonext' && $role === 'dj') {
-    $nowPlayingIdx = (int)($input['nowPlayingIdx'] ?? -1);
+    $nowPlayingIdx = filter_var($input['nowPlayingIdx'] ?? null, FILTER_VALIDATE_INT, ['options' => ['default' => -1]]);
     if ($nowPlayingIdx >= 0 && $nowPlayingIdx < count($sessionData['tracks'])) {
         $sessionData['nowPlayingIdx'] = $nowPlayingIdx;
         $eventPayload = ['action' => 'auto-next', 'nowPlayingIdx' => $nowPlayingIdx];
+    } else {
+        flock($fp, LOCK_UN);
+        fclose($fp);
+        sendErrorAndExit('Invalid now playing index');
     }
 }
 elseif ($action === 'ready' && $role === 'vj') {
     $eventPayload = ['action' => 'vj-ready'];
+}
+else {
+    flock($fp, LOCK_UN);
+    fclose($fp);
+    sendErrorAndExit('Invalid action');
 }
 
 // データの保存（変更があった場合）

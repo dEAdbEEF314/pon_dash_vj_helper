@@ -60,20 +60,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let token = '';
 
+    let requestInFlight = false;
     document.getElementById('deleteSessionBtn').addEventListener('click', async () => {
-        if (!token || !confirm('このセッションとプレイリストを削除しますか？')) return;
+        if (requestInFlight || !token || !confirm('このセッションとプレイリストを削除しますか？')) return;
+        requestInFlight = true;
         try {
-            const res = await fetch(`${API_BASE}/action.php?action=delete_session&role=dj`, {
+            await apiRequest('action.php?action=delete_session&role=dj', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ sessionId, token })
             });
-            const data = await res.json();
-            if (!data.success) throw new Error(data.error || '削除に失敗しました');
             localStorage.removeItem(recoveryKey);
             window.location.href = 'index.html';
         } catch (error) {
             alert(`削除エラー: ${error.message}`);
+        } finally {
+            requestInFlight = false;
         }
     });
 
@@ -83,12 +84,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const pwd = document.getElementById('password').value;
         
         try {
-            const res = await fetch(`${API_BASE}/action.php?action=login&role=dj`, {
+            const data = await apiRequest('action.php?action=login&role=dj', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ sessionId, password: pwd })
             });
-            const data = await res.json();
             if (data.success) {
                 token = data.token; // 認証トークン
                 localStorage.setItem(recoveryKey, JSON.stringify({
@@ -373,7 +372,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // SENDボタン処理 (通常プレイリストからの送信)
     const sendBtn = document.getElementById('sendBtn');
+    let sendInFlight = false;
     sendBtn.addEventListener('click', async () => {
+        if (sendInFlight) return;
         const targetIdx = state.selectedIdx !== -1 ? state.selectedIdx : (state.sentIdx === -1 ? 0 : state.nowPlayingIdx + 1);
         if (targetIdx >= state.tracks.length) {
             alert("次に送信する曲がありません。");
@@ -381,10 +382,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // SENDリクエスト送信
+        sendInFlight = true;
+        sendBtn.disabled = true;
         try {
-            await fetch(`${API_BASE}/action.php?action=send&role=dj`, {
+            await apiRequest('action.php?action=send&role=dj', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ sessionId, token, sendIdx: targetIdx })
             });
 
@@ -407,6 +409,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         } catch(e) {
             alert("SENDエラー: " + e.message);
+        } finally {
+            sendInFlight = false;
+            sendBtn.disabled = false;
         }
     });
 
@@ -457,32 +462,26 @@ document.addEventListener('DOMContentLoaded', async () => {
             const customTrack = { title, artist, isVibes: true };
 
             try {
-                const res = await fetch(`${API_BASE}/action.php?action=send&role=dj`, {
+                await apiRequest('action.php?action=send&role=dj', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ sessionId, token, customTrack })
                 });
 
-                const data = await res.json();
-                if (data.success) {
-                    state.sentIdx = -2;
-                    state.customTrack = customTrack;
-                    document.getElementById('vjReadyBadge').style.display = 'none';
-                    document.getElementById('sendTrackBox').classList.remove('vj-ready-highlight');
-                    
-                    state.selectedIdx = -1;
-                    renderPlaylist();
-                    updateDisplay();
+                state.sentIdx = -2;
+                state.customTrack = customTrack;
+                document.getElementById('vjReadyBadge').style.display = 'none';
+                document.getElementById('sendTrackBox').classList.remove('vj-ready-highlight');
 
-                    closeModal();
-                    // フォーム入力リセット
-                    titleInput.value = '';
-                    artistInput.value = '';
+                state.selectedIdx = -1;
+                renderPlaylist();
+                updateDisplay();
 
-                    flashScreen('is-flashing-danger');
-                } else {
-                    alert("送信に失敗しました");
-                }
+                closeModal();
+                // フォーム入力リセット
+                titleInput.value = '';
+                artistInput.value = '';
+
+                flashScreen('is-flashing-danger');
             } catch(e) {
                 alert("手入力SENDエラー: " + e.message);
             }
@@ -492,20 +491,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 自動曲送り（カウントダウン後）
     async function autoNextTrack(newPlayingIdx) {
         try {
-            const res = await fetch(`${API_BASE}/action.php?action=autonext&role=dj`, {
+            await apiRequest('action.php?action=autonext&role=dj', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ sessionId, token, nowPlayingIdx: newPlayingIdx })
             });
-            const data = await res.json();
-            if(data.success) {
-                state.nowPlayingIdx = newPlayingIdx;
-                // state.sentIdx = -1; // 変更: SEND情報を残す
-                state.selectedIdx = -1;
-                document.getElementById('vjReadyBadge').style.display = 'none';
-                renderPlaylist();
-                updateDisplay();
-            }
+            state.nowPlayingIdx = newPlayingIdx;
+            // state.sentIdx = -1; // 変更: SEND情報を残す
+            state.selectedIdx = -1;
+            document.getElementById('vjReadyBadge').style.display = 'none';
+            renderPlaylist();
+            updateDisplay();
         } catch(e) {
             console.error("AutoNextエラー", e);
         }

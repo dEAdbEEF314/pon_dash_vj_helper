@@ -3,6 +3,18 @@ const { test, expect } = require('@playwright/test');
 test.describe('E2E Test: Single Session Flow (Register -> DJ -> VJ)', () => {
     const host = 'http://172.19.0.2';
 
+    test('Landing page and VDJ lobby handoff expose the new entry points', async ({ page }) => {
+        await page.goto(`${host}/index.html`);
+        await expect(page.locator('a[href="dj-register.html"]')).toHaveCount(2);
+        await expect(page.locator('a[href="vj.html"]')).toHaveCount(3);
+        await expect(page.locator('a[href="dj-manual.html"]').first()).toBeVisible();
+        await expect(page.locator('a[href="vj-manual.html"]').first()).toBeVisible();
+
+        await page.goto(`${host}/dj-register.html?lobby=ab12CD34ef`);
+        await expect(page.locator('#lobbyCodeInput')).toHaveValue('AB12CD34EF');
+        await expect(page.locator('#pushToLobbyBtn')).toBeAttached();
+    });
+
     test('Full DJ and VJ Interaction Scenario', async ({ browser }) => {
         const djContext = await browser.newContext();
         const vjContext = await browser.newContext();
@@ -11,7 +23,7 @@ test.describe('E2E Test: Single Session Flow (Register -> DJ -> VJ)', () => {
         const vjPage = await vjContext.newPage();
 
         // 1. DJ 事前登録
-        await djPage.goto(`${host}/index.html`);
+        await djPage.goto(`${host}/dj-register.html`);
         await djPage.fill('#accountName', 'E2E_PARTY_SET');
         await djPage.fill('#djPassword', '8888');
         await djPage.fill('#vjPassword', '7777');

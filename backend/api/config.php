@@ -8,8 +8,18 @@
 
 header('Content-Type: application/json; charset=UTF-8');
 header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: DENY');
 header('Referrer-Policy: no-referrer');
+header('Permissions-Policy: camera=(), microphone=(), geolocation=()');
+header("Content-Security-Policy: default-src 'none'; frame-ancestors 'none'");
 header('Cache-Control: no-store');
+
+if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+    http_response_code(405);
+    header('Allow: GET');
+    echo json_encode(['success' => false, 'error' => 'Method not allowed']);
+    exit;
+}
 
 // env.php から設定を読み込み
 if (!file_exists(__DIR__ . '/env.php')) {

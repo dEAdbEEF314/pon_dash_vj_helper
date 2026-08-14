@@ -10,7 +10,10 @@
 
 header('Content-Type: application/json; charset=UTF-8');
 header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: DENY');
 header('Referrer-Policy: no-referrer');
+header('Permissions-Policy: camera=(), microphone=(), geolocation=()');
+header("Content-Security-Policy: default-src 'none'; frame-ancestors 'none'");
 header('Cache-Control: no-store');
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
@@ -22,16 +25,18 @@ if ((int)($_SERVER['CONTENT_LENGTH'] ?? 0) > 1048576) {
 }
 
 // CORS設定 (H-3)
-$allowedOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
+$allowedOrigin = rtrim(trim((string)($_SERVER['HTTP_ORIGIN'] ?? '')), '/');
 $requestScheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-$sameOrigin = $requestScheme . '://' . ($_SERVER['HTTP_HOST'] ?? '');
-if ($allowedOrigin !== '' && !hash_equals($sameOrigin, $allowedOrigin)) {
+$requestHost = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
+$sameOrigin = $requestHost !== '' ? $requestScheme . '://' . $requestHost : '';
+if ($allowedOrigin !== '' && ($sameOrigin === '' || !hash_equals($sameOrigin, $allowedOrigin))) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Origin not allowed']);
     exit;
 }
-if ($allowedOrigin !== '' && hash_equals($sameOrigin, $allowedOrigin)) {
+if ($allowedOrigin !== '') {
     header("Access-Control-Allow-Origin: {$allowedOrigin}");
+    header('Vary: Origin');
 }
 header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
@@ -87,7 +92,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$input = json_decode(file_get_contents('php://input'), true);
+$rawInput = file_get_contents('php://input');
+$input = $rawInput === '' ? null : json_decode($rawInput, true);
 
 if (!is_array($input)
     || !isset($input['accountName'], $input['djPassword'], $input['vjPassword'], $input['tracks'])

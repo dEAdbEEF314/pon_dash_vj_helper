@@ -23,7 +23,7 @@
     <div class="login-screen" id="loginScreen">
         <div class="glass-panel" style="max-width: 420px; width: 100%; text-align: center;" id="modeSelectPanel">
             <h2>Pon Dash VJ Helper (仮)</h2>
-            <a href="index.html" class="btn" style="width: 100%; display: inline-block; margin-bottom: 20px;">
+            <a href="dj-register.html" class="btn" style="width: 100%; display: inline-block; margin-bottom: 20px;">
                 🎧 DJの方はこちら（事前登録へ）
             </a>
             <p style="font-size: 0.85rem; margin-bottom: 20px; color: var(--text-secondary);">モードを選択してください</p>
@@ -44,6 +44,9 @@
             <p style="font-size: 0.8rem; margin: 0;">DJに以下のコードを伝えてください</p>
 
             <div class="lobby-code-display" id="lobbyCodeDisplay">------</div>
+            <a href="dj-register.html" id="vdjRegisterLink" class="btn" style="width: 100%; display: inline-block; margin: 8px 0 12px;">
+                🎧 DJとしても参加する（登録へ）
+            </a>
 
             <div style="margin: 15px 0; text-align: left;">
                 <label style="font-size: 0.8rem; color: var(--text-secondary);">連携済みDJセッション (<span
@@ -69,8 +72,8 @@
                 </summary>
                 <div class="lobby-guide-content" style="margin-top: 8px;">
                     <ul style="margin: 0 0 10px 16px; padding: 0; color: #cbd5e1; line-height: 1.5;">
-                        <li style="margin-bottom: 4px;">上の<strong>10文字のコード</strong>を現場のDJに伝えてください。</li>
-                        <li style="margin-bottom: 4px;">DJが送信すると、自動的に「連携済みDJセッション」に追加されます。</li>
+                        <li style="margin-bottom: 4px;">上の<strong>10文字のロビーコード</strong>を現場のDJに伝えてください。</li>
+                        <li style="margin-bottom: 4px;">DJがコードを送信すると、「連携済みDJセッション」に自動追加されます。</li>
                         <li style="margin-bottom: 4px;">DJが追加されたら、<strong>「VJモードを開始する」</strong>ボタンで操作画面へ進みます。</li>
                     </ul>
 
@@ -80,7 +83,7 @@
                         <div style="text-align: center; font-size: 0.65rem; color: #64748b; margin-bottom: 6px;">▼ VJ操作画面の見本
                             ▼</div>
 
-                        <!-- セッションタブ -->
+                        <!-- セッションタブバー -->
                         <div style="display: flex; gap: 4px; margin-bottom: 6px; overflow-x: hidden;">
                             <div
                                 style="background: rgba(0, 255, 204, 0.15); color: #00ffcc; border: 1px solid #00ffcc; padding: 3px 6px; font-size: 0.65rem; border-radius: 4px; font-weight: bold;">
@@ -90,40 +93,59 @@
                                 🎧 DJ_HANAKO <span
                                     style="width:6px; height:6px; background:#ff3366; border-radius:50%; box-shadow:0 0 4px #ff3366; display:inline-block;"></span>
                             </div>
-                            <div style="color: #94a3b8; font-size: 0.65rem; padding: 3px 4px;">+ 追加</div>
                         </div>
 
-                        <!-- 曲情報 -->
-                        <div
-                            style="background: rgba(255, 51, 102, 0.1); border-left: 2px solid #ff3366; padding: 4px 6px; margin-bottom: 6px; border-radius: 4px;">
-                            <div style="font-size: 0.6rem; color: #ff3366;">DJからSENDされた曲 (タップで検索窓にコピー)</div>
+                        <!-- 上段：ステータス表示 -->
+                        <div style="margin-bottom: 6px;">
+                            <!-- DJからSENDされた曲 -->
                             <div
-                                style="font-size: 0.75rem; color: #00ffcc; text-decoration: underline dotted rgba(0,255,204,0.5);">
-                                Neon Pulse</div>
+                                style="background: rgba(255, 51, 102, 0.1); border-left: 2px solid #ff3366; padding: 4px 6px; margin-bottom: 6px; border-radius: 4px;">
+                                <div style="font-size: 0.6rem; color: #ff3366;">DJからSENDされた曲 (タップで検索窓にコピー)</div>
+                                <div
+                                    style="font-size: 0.75rem; color: #00ffcc; text-decoration: underline dotted rgba(0,255,204,0.5);">
+                                    Neon Pulse</div>
+                                <div style="font-size: 0.65rem; color: #cbd5e1;">DJ_TARO</div>
+                            </div>
+
+                            <!-- プレイリスト上の次の曲 -->
+                            <div
+                                style="background: rgba(255,255,255,0.05); border-left: 2px solid rgba(255,255,255,0.25); padding: 4px 6px; border-radius: 4px;">
+                                <div style="font-size: 0.6rem; color: #94a3b8;">プレイリスト上の次の曲 (Next in Playlist)</div>
+                                <div style="font-size: 0.75rem; color: #cbd5e1;">Midnight Drive</div>
+                                <div style="font-size: 0.65rem; color: #94a3b8;">DJ_TARO</div>
+                            </div>
                         </div>
 
-                        <!-- READYボタン -->
+                        <!-- 中段：READYボタン -->
                         <div
-                            style="background: rgba(0, 255, 136, 0.1); border: 1px solid #00ff88; color: #00ff88; padding: 4px 8px; font-size: 0.7rem; font-weight: bold; border-radius: 4px; text-align: center; margin-bottom: 6px;">
+                            style="background: rgba(0, 255, 136, 0.1); border: 1px solid #00ff88; color: #00ff88; padding: 4px 8px; font-size: 0.7rem; font-weight: bold; border-radius: 4px; text-align: center; margin-bottom: 2px;">
                             READY</div>
+                        <div style="font-size: 0.6rem; color: #64748b; text-align: center; margin-bottom: 6px;">※準備完了をDJに伝えます</div>
 
-                        <!-- 検索エリア -->
-                        <div style="display: flex; gap: 4px; margin-bottom: 6px;">
-                            <div
-                                style="flex: 1; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); padding: 4px; font-size: 0.7rem; color: #00ffcc; border-radius: 4px;">
-                                Neon Pulse</div>
+                        <!-- 素材検索 -->
+                        <div style="margin-bottom: 6px;">
+                            <div style="font-size: 0.7rem; color: #cbd5e1; margin-bottom: 3px;">素材検索</div>
+                            <input type="text" placeholder="検索ワードを入力してください"
+                                style="box-sizing: border-box; width: 100%; padding: 4px 6px; margin-bottom: 3px; font-size: 0.65rem; color: #cbd5e1; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px;">
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 3px;">
+                                <span
+                                    style="padding: 4px 2px; font-size: 0.65rem; text-align: center; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; color: #cbd5e1;">Google</span>
+                                <span
+                                    style="padding: 4px 2px; font-size: 0.65rem; text-align: center; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; color: #cbd5e1;">YouTube</span>
+                                <span
+                                    style="padding: 4px 2px; font-size: 0.65rem; text-align: center; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; color: #cbd5e1;">ニコニコ動画</span>
+                                <span
+                                    style="padding: 4px 2px; font-size: 0.65rem; text-align: center; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; color: #cbd5e1;">GIPHY</span>
+                            </div>
                         </div>
-                        <div style="display: flex; gap: 3px; flex-wrap: wrap; margin-bottom: 6px;">
-                            <span
-                                style="flex: 1 1 18%; padding: 4px 2px; font-size: 0.65rem; text-align: center; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; color: #cbd5e1;">Google</span>
-                            <span
-                                style="flex: 1 1 18%; padding: 4px 2px; font-size: 0.65rem; text-align: center; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; color: #cbd5e1; line-height: 1.1;">Google<br>画像</span>
-                            <span
-                                style="flex: 1 1 18%; padding: 4px 2px; font-size: 0.65rem; text-align: center; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; color: #cbd5e1; line-height: 1.1;">YOU<br>TUBE</span>
-                            <span
-                                style="flex: 1 1 18%; padding: 4px 2px; font-size: 0.65rem; text-align: center; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; color: #cbd5e1;">ニコニコ</span>
-                            <span
-                                style="flex: 1 1 18%; padding: 4px 2px; font-size: 0.65rem; text-align: center; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; color: #cbd5e1;">GIPHY</span>
+
+                        <!-- 下段：プレイリスト -->
+                        <div>
+                            <div style="font-size: 0.7rem; color: #cbd5e1; margin-bottom: 3px;">プレイリスト (DJ全体像)</div>
+                            <div style="background: rgba(0,0,0,0.3); border-radius: 4px; padding: 4px 6px; color: #cbd5e1; font-size: 0.65rem;">
+                                <div>Neon Pulse - DJ_TARO</div>
+                                <div style="color: #94a3b8;">Midnight Drive - DJ_TARO</div>
+                            </div>
                         </div>
 
                         <!-- 解説文 -->
@@ -131,7 +153,8 @@
                             <strong>💡 ポイント:</strong><br>
                             ・複数DJを<strong>タブで切り替え</strong>管理できます。<br>
                             ・裏のタブのDJが新曲をSENDすると<strong>赤丸(●)でお知らせ</strong>します。<br>
-                            ・素材が用意できたら<strong>READYボタン</strong>でDJに準備完了を通知できます。
+                            ・素材が用意できたら<strong>READYボタン</strong>でDJに準備完了を通知できます。<br>
+                            ・検索先は<strong>Google、YouTube、ニコニコ動画、GIPHY</strong>の4つです。
                         </div>
                     </div>
                 </div>

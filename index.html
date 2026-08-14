@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pon Dash VJ Helper (仮) | DJプレイリスト事前登録</title>
+    <title>Pon Dash VJ Helper (仮) | DJ/VJ連携</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="icon" type="image/png" href="/pon_dash/favicon-96x96.png" sizes="96x96" />
@@ -19,327 +19,63 @@
 </head>
 
 <body class="index-page">
-    <div class="container">
-        <h1>Pon Dash VJ Helper (仮)</h1>
+    <div class="container landing-container">
+        <header class="landing-hero">
+            <p class="eyebrow">PON DASH VJ HELPER</p>
+            <h1>DJとVJの連携を、現場で迷わず。</h1>
+            <p class="page-lead">DJが曲情報をSENDし、VJが素材を検索してREADYを返すブラウザアプリです。役割に関係なく、スマートフォン・PCどちらからでも利用できます。</p>
+        </header>
 
-        <div
-            style="text-align: center; margin-bottom: 15px; display: flex; flex-direction: column; gap: 12px; align-items: center;">
-            <a href="vj.html" class="btn btn-primary"
-                style="display: inline-block; padding: 10px 20px; width: 100%; max-width: 300px;">💻
-                VJの方はこちらから</a>
-            <a href="#registration-panel" class="btn btn-primary"
-                style="display: inline-block; padding: 10px 20px; width: 100%; max-width: 300px;">👇
-                事前登録フォームへ進む</a>
-        </div>
-
-        <!-- 取扱説明書 (DJ向けガイド) -->
-        <div class="glass-panel" id="guide-panel" style="margin-bottom: 20px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;"
-                id="guideToggleHeader">
-                <h2 style="margin: 0; font-size: 1.15rem; color: #00ffcc;">📖 使い方ガイド（DJ向け）</h2>
-                <span id="guideToggleIcon" style="font-size: 0.85rem; color: var(--text-secondary);">[閉じる]</span>
+        <section class="glass-panel landing-overview" aria-labelledby="overview-heading">
+            <h2 id="overview-heading">アプリの趣旨・機能・利用シーン</h2>
+            <div class="landing-flow">
+                <div><strong>1. VJ</strong><span>ロビーを開いてコードを共有</span></div>
+                <div><strong>2. DJ</strong><span>プレイリストを登録して連携</span></div>
+                <div><strong>3. 本番</strong><span>SENDとREADYでリアルタイム連携</span></div>
             </div>
+            <details>
+                <summary>初めての方へ：もう少し詳しく見る</summary>
+                <p>VJは受け取った曲名から映像素材を検索し、準備ができたらREADYを送ります。DJはプレイリストから曲を選び、SEND TO VJで通知します。DJとVJを兼任するVDJは、先にVJロビーを作成し、その後DJ登録を行うとスムーズです。</p>
+                <p class="device-note"><strong>端末について：</strong>DJ・VJともにスマートフォン／PCで利用できます。スマホは移動中や片手操作、PCは複数セッションや検索結果の確認に便利です。</p>
+            </details>
+        </section>
 
-            <div id="guideContent" style="margin-top: 15px; font-size: 0.85rem; line-height: 1.6;">
-                <p style="margin-bottom: 15px;">
-                    <strong>Pon Dash VJ Helper</strong> は、DJとVJのリアルタイムな曲連携・素材検索をサポートするブラウザアプリです。<br>
-                    以下の3ステップで使い始めることができます。
-                </p>
-
-                <!-- ===== STEP 1: 事前登録 ===== -->
-                <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; margin-bottom: 16px;">
-                    <h3 style="font-size: 0.95rem; margin: 0 0 8px 0; color: #fff;">Step 1. このページで事前登録する</h3>
-                    <p style="margin: 0 0 10px 0;">
-                        下のフォームからプレイリストファイルをアップロードし、パスワードを設定するだけ。<br>
-                        登録完了後、<strong>DJ操作ページ</strong>のURLと<strong>VJ用共有URL</strong>が発行されます。
-                    </p>
-
-                    <!-- 事前登録画面モック -->
-                    <div class="guide-mock"
-                        style="background: var(--bg-color, #0f172a); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px; font-size: 0.8rem;">
-                        <div style="text-align: center; font-size: 0.65rem; color: #64748b; margin-bottom: 6px;">▼
-                            事前登録画面の見本 ▼</div>
-                        <div style="margin-bottom: 6px;">
-                            <div style="color: #94a3b8; font-size: 0.7rem; margin-bottom: 2px;">アカウント名 + プレイリスト名</div>
-                            <div
-                                style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 5px 8px; color: #64748b; font-size: 0.75rem;">
-                                例: DJTARO_TECHNO_SET</div>
-                        </div>
-                        <div style="margin-bottom: 6px;">
-                            <div style="color: #94a3b8; font-size: 0.7rem; margin-bottom: 2px;">プレイリストファイル</div>
-                            <div
-                                style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 5px 8px; color: #64748b; font-size: 0.75rem;">
-                                📄 M3U, CSV, XML</div>
-                        </div>
-                        <div style="display: flex; gap: 6px; margin-bottom: 8px;">
-                            <div style="flex: 1;">
-                                <div style="color: #94a3b8; font-size: 0.7rem; margin-bottom: 2px;">DJ用パスワード</div>
-                                <div
-                                    style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 5px 8px; color: #64748b; font-size: 0.75rem; text-align: center;">
-                                    ●●●●</div>
-                            </div>
-                            <div style="flex: 1;">
-                                <div style="color: #94a3b8; font-size: 0.7rem; margin-bottom: 2px;">VJ用パスワード</div>
-                                <div
-                                    style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 5px 8px; color: #64748b; font-size: 0.75rem; text-align: center;">
-                                    ●●●●</div>
-                            </div>
-                        </div>
-                        <div
-                            style="background: var(--accent-color, #00ffcc); color: #000; text-align: center; padding: 6px; border-radius: 6px; font-weight: bold; font-size: 0.8rem;">
-                            登録してURLを発行</div>
-                    </div>
+        <section class="landing-role-grid" aria-label="利用者別の開始方法">
+            <article class="glass-panel role-card">
+                <p class="role-kicker">DJとして使う</p>
+                <h2>曲をVJへ送る</h2>
+                <p>プレイリストを登録し、曲のSENDとVJ READYの確認を行います。</p>
+                <div class="role-actions">
+                    <a class="btn btn-primary" href="dj-register.html">DJ事前登録を開始</a>
+                    <a class="btn" href="dj-manual.html">DJ説明書を見る</a>
                 </div>
-
-                <!-- ===== STEP 2: VJとの連携 ===== -->
-                <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; margin-bottom: 16px;">
-                    <h3 style="font-size: 0.95rem; margin: 0 0 8px 0; color: #fff;">Step 2. 登録完了 → VJと連携する</h3>
-                    <p style="margin: 0 0 10px 0;">
-                        登録完了画面で、VJから口頭で教えてもらった<strong style="color: #00ffcc;">10文字のロビーコード</strong>を入力して「送信」するだけ！<br>
-                        VJのPC画面にあなたのプレイリストが自動的に届きます。連絡先交換は不要です。
-                    </p>
-
-                    <!-- 登録完了画面モック -->
-                    <div class="guide-mock"
-                        style="background: var(--bg-color, #0f172a); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px; font-size: 0.8rem;">
-                        <div style="text-align: center; font-size: 0.65rem; color: #64748b; margin-bottom: 6px;">▼
-                            登録完了画面の見本 ▼</div>
-                        <div
-                            style="background: rgba(0,255,204,0.05); border: 1px solid rgba(0,255,204,0.3); border-radius: 6px; padding: 8px; margin-bottom: 6px;">
-                            <div style="font-size: 0.8rem; font-weight: bold; color: #00ffcc; margin-bottom: 4px;">①
-                                VJロビーに送る</div>
-                            <div style="display: flex; gap: 6px; align-items: center;">
-                                <div
-                                    style="flex: 1; background: rgba(0,0,0,0.5); border: 1px solid rgba(0,255,204,0.3); border-radius: 4px; padding: 5px; text-align: center; font-weight: bold; letter-spacing: 2px; color: #00ffcc; font-family: monospace;">
-                                    A3X7K9</div>
-                                <div
-                                    style="background: var(--accent-color, #00ffcc); color: #000; padding: 5px 10px; border-radius: 4px; font-weight: bold; font-size: 0.75rem; white-space: nowrap;">
-                                    送信</div>
-                            </div>
-                            <div style="font-size: 0.7rem; color: #00ffcc; margin-top: 4px;">✅ VJロビーへ送信成功！</div>
-                        </div>
-                    </div>
+            </article>
+            <article class="glass-panel role-card">
+                <p class="role-kicker">VJとして使う</p>
+                <h2>素材を準備する</h2>
+                <p>ロビーでDJを待ち受け、曲を検索してREADYを返します。</p>
+                <div class="role-actions">
+                    <a class="btn btn-primary" href="vj.html">VJロビーを開く</a>
+                    <a class="btn" href="vj-manual.html">VJ説明書を見る</a>
                 </div>
-
-                <!-- ===== STEP 3: DJ操作ページ ===== -->
-                <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; margin-bottom: 12px;">
-                    <h3 style="font-size: 0.95rem; margin: 0 0 8px 0; color: #fff;">Step 3. DJページを操作する</h3>
-                    <p style="margin: 0 0 6px 0;">
-                        発行されたDJ用URLをスマホで開き、パスワードでログインすると操作画面に入れます。
-                    </p>
-
-                    <!-- DJ操作モック: 2タブ表示 -->
-                    <div class="guide-mock"
-                        style="background: var(--bg-color, #0f172a); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px; font-size: 0.8rem;">
-                        <div style="text-align: center; font-size: 0.65rem; color: #64748b; margin-bottom: 6px;">▼
-                            DJ操作画面には 2つのタブ があります ▼</div>
-
-                        <!-- タブ表示 -->
-                        <div
-                            style="display: flex; gap: 3px; background: rgba(0,0,0,0.3); padding: 3px; border-radius: 6px; margin-bottom: 8px;">
-                            <div style="flex: 1; text-align: center; padding: 5px 4px; font-size: 0.75rem; font-weight: bold; background: var(--accent-color, #00ffcc); color: #000; border-radius: 4px;"
-                                id="mockTabDj">🎧 DJ操作</div>
-                            <div style="flex: 1; text-align: center; padding: 5px 4px; font-size: 0.75rem; font-weight: bold; color: #94a3b8; border-radius: 4px; cursor: pointer;"
-                                id="mockTabVj">🔍 VJ検索</div>
-                        </div>
-
-                        <!-- タブ内容A: DJ操作 -->
-                        <div id="mockContentDj">
-                            <div style="font-size: 0.75rem; font-weight: bold; color: #ffcc00; margin-bottom: 4px;">🎧
-                                DJ操作タブ</div>
-                            <!-- ステータスボックス群 -->
-                            <div style="display: flex; flex-direction: column; gap: 3px; margin-bottom: 6px;">
-                                <div
-                                    style="background: rgba(255,51,102,0.1); border-left: 2px solid #ff3366; border-radius: 4px; padding: 4px 8px;">
-                                    <div style="font-size: 0.6rem; color: #ff3366;">VJに通知した曲 (SENT to VJ) <span
-                                            style="font-size: 0.8rem; background-color: #000; color: #fff; padding: 2px 4px; border-radius: 4px; margin-left: 4px;">[VJ
-                                            READY]</span></div>
-                                    <div style="font-size: 0.75rem; color: #fff;">Neon Pulse</div>
-                                    <div style="font-size: 0.65rem; color: #94a3b8;">DJ TECHNO</div>
-                                </div>
-                                <div
-                                    style="background: rgba(0,255,204,0.05); border-left: 2px solid rgba(0,255,204,0.5); border-radius: 4px; padding: 4px 8px;">
-                                    <div style="font-size: 0.6rem; color: #00ffcc;">VJに通知する曲 (SEND to VJ)</div>
-                                    <div style="font-size: 0.75rem; color: #fff;">Midnight Runner</div>
-                                    <div style="font-size: 0.65rem; color: #94a3b8;">Artist X</div>
-                                </div>
-                            </div>
-                            <!-- SENDボタン & VIBES!ボタン -->
-                            <div style="display: flex; gap: 6px; margin-bottom: 6px; align-items: center;">
-                                <div
-                                    style="flex: 1 1 70%; background: linear-gradient(135deg, #ff3366, #cc0044); color: #fff; text-align: center; padding: 8px 4px; border-radius: 6px; font-weight: bold; font-size: 0.85rem; box-sizing: border-box;">
-                                    SEND TO VJ</div>
-                                <div
-                                    style="flex: 0 0 30%; border: 1px solid #d946ef; color: #d946ef; background: rgba(217, 70, 239, 0.1); text-align: center; padding: 8px 4px; border-radius: 6px; font-weight: bold; font-size: 0.8rem; box-sizing: border-box; white-space: nowrap;">
-                                    VIBES!</div>
-                            </div>
-                            <div style="font-size: 0.65rem; color: #64748b; text-align: center; margin-bottom: 6px;">
-                                ※下段のリストから選択してSEND / 「VIBES!」で手入力SEND</div>
-                            <!-- ミニプレイリスト -->
-                            <div style="background: rgba(0,0,0,0.4); border-radius: 4px; padding: 4px;">
-                                <div style="font-size: 0.65rem; color: #94a3b8; margin-bottom: 2px;">プレイリスト</div>
-                                <div
-                                    style="padding: 3px 6px; font-size: 0.7rem; border-left: 2px solid #94a3b8; margin-bottom: 2px; color: #64748b;">
-                                    1. Opening Act / DJ TECHNO</div>
-                                <div
-                                    style="padding: 3px 6px; font-size: 0.7rem; border-left: 2px solid #fff; margin-bottom: 2px; color: #fff; font-weight: bold;">
-                                    2. Midnight Runner / Artist X</div>
-                                <div
-                                    style="padding: 3px 6px; font-size: 0.7rem; border-left: 2px solid #ff3366; margin-bottom: 2px; color: #ff3366; background: rgba(255,51,102,0.08);">
-                                    3. Neon Pulse / DJ TECHNO ← SENT</div>
-                                <div
-                                    style="padding: 3px 6px; font-size: 0.7rem; border-left: 2px solid transparent; color: #64748b;">
-                                    4. Electric Dream / MC BASS</div>
-                            </div>
-                        </div>
-
-                        <!-- タブ内容B: VJ検索 -->
-                        <div id="mockContentVj" style="display: none;">
-                            <div style="font-size: 0.75rem; font-weight: bold; color: #00ffcc; margin-bottom: 4px;">🔍
-                                VJ検索タブ（DJ+VJ 兼任用）</div>
-                            <p style="font-size: 0.7rem; color: #94a3b8; margin: 0 0 6px 0;">
-                                DJと素材検索を1台で兼任する人のための画面です。<br>※READYボタンは兼任モードでは省略されています。</p>
-                            <!-- SEND曲表示 -->
-                            <div
-                                style="background: rgba(255,51,102,0.1); border-left: 2px solid #ff3366; border-radius: 4px; padding: 6px 8px; margin-bottom: 6px;">
-                                <div style="font-size: 0.6rem; color: #ff3366;">DJからSENDされた曲 (タップで検索窓にコピー)</div>
-                                <div
-                                    style="font-size: 0.8rem; color: #00ffcc; cursor: pointer; text-decoration: underline dotted rgba(0,255,204,0.5);">
-                                    Neon Pulse</div>
-                                <div
-                                    style="font-size: 0.7rem; color: #94a3b8; cursor: pointer; text-decoration: underline dotted rgba(255,255,255,0.3);">
-                                    DJ TECHNO</div>
-                            </div>
-                            <!-- 検索エリア -->
-                            <div style="display: flex; gap: 4px; margin-bottom: 6px;">
-                                <div
-                                    style="flex: 1; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 5px 8px; color: #00ffcc; font-size: 0.75rem;">
-                                    Neon Pulse</div>
-                            </div>
-                            <div style="display: flex; gap: 3px; flex-wrap: wrap;">
-                                <span
-                                    style="flex: 1 1 18%; padding: 4px 2px; font-size: 0.65rem; text-align: center; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; color: #cbd5e1;">Google</span>
-                                <span
-                                    style="flex: 1 1 18%; padding: 4px 2px; font-size: 0.65rem; text-align: center; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; color: #cbd5e1; line-height: 1.1;">Google<br>画像</span>
-                                <span
-                                    style="flex: 1 1 18%; padding: 4px 2px; font-size: 0.65rem; text-align: center; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; color: #cbd5e1; line-height: 1.1;">YOU<br>TUBE</span>
-                                <span
-                                    style="flex: 1 1 18%; padding: 4px 2px; font-size: 0.65rem; text-align: center; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; color: #cbd5e1;">ニコニコ</span>
-                                <span
-                                    style="flex: 1 1 18%; padding: 4px 2px; font-size: 0.65rem; text-align: center; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; color: #cbd5e1;">GIPHY</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style="margin-top: 10px; font-size: 0.8rem;">
-                        <strong style="color: #00ffcc;">📱 DJ+VJ 兼任の方へ:</strong>
-                        VJ検索タブでは、SENDされた<strong>曲名やアーティスト名をタップするだけ</strong>で検索窓にコピーされます。
-                        そのまま検索ボタンを押せば、YouTube等で素材を即座に探せます。
-                    </div>
+            </article>
+            <article class="glass-panel role-card role-card-vdj">
+                <p class="role-kicker">DJとVJを兼任する</p>
+                <h2>VDJとして使う</h2>
+                <p>先にロビーを作成し、ロビーコードを引き継いでDJ登録します。</p>
+                <div class="role-actions">
+                    <a class="btn btn-primary" href="vj.html">ロビーを作成して開始</a>
+                    <a class="btn" href="vj-manual.html#vdj">VDJ手順を見る</a>
                 </div>
-            </div>
+            </article>
+        </section>
 
-            <div class="glass-panel" id="registration-panel">
-                <h2>DJ 事前登録</h2>
-                <p style="margin-bottom: 20px; font-size: 0.85rem; color: #ffcc00;">
-                    ※個人情報や機微情報は含まないため、簡易的な認証となります。
-                </p>
-
-                <form id="registerForm">
-                    <div class="form-group">
-                        <label for="accountName">アカウント名 + プレイリスト名</label>
-                        <input type="text" id="accountName" name="accountName" placeholder="例: DJTARO_TECHNO_SET"
-                            pattern="[A-Za-z0-9_\-]+" title="半角英数大文字小文字とアンダースコア(_)、ハイフン(-)のみ" required>
-                        <small style="color: var(--text-secondary); font-size: 0.8rem;">※アルファベット（大文字・小文字）, 数字, _, -
-                            のみ使用可能</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="playlistFile">プレイリストファイル (M3U, CSV, TXT, XML)</label>
-                        <input type="file" id="playlistFile" accept=".m3u,.m3u8,.csv,.txt,.xml" required>
-                        <small
-                            style="color: var(--text-secondary); font-size: 0.8rem; display: block; margin-top: 5px;">
-                            対応: M3U, Rekordbox XML, Serato/djay/VirtualDJ CSV等
-                        </small>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="djPassword">操作許可パスワード (DJ用)</label>
-                        <input type="password" id="djPassword" name="djPassword" placeholder="数字4桁" pattern="\d{4}"
-                            title="数字4桁を入力してください" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="vjPassword">閲覧許可パスワード (VJ用)</label>
-                        <input type="password" id="vjPassword" name="vjPassword" placeholder="数字4桁" pattern="\d{4}"
-                            title="数字4桁を入力してください" required>
-                    </div>
-
-                    <!-- プレビュー領域 -->
-                    <div id="previewArea" class="hidden"
-                        style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
-                        <h3>プレイリストプレビュー <span id="trackCount" style="font-size:1rem; color:var(--accent-color);"></span>
-                        </h3>
-                        <div class="playlist-container" id="previewList" style="max-height: 200px;">
-                            <!-- JSで動的に追加 -->
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary" style="margin-top: 20px;"
-                        id="registerBtn">登録してURLを発行</button>
-                </form>
-            </div>
-
-            <!-- 登録完了後の表示エリア -->
-            <div class="glass-panel hidden" id="result-panel">
-                <h2>登録完了</h2>
-                <p>以下のURLをVJへ共有するか、VJロビーコードを送信してください。</p>
-
-                <div style="margin-top: 20px;">
-                    <label>DJ用 操作URL (自分用)</label>
-                    <div class="url-box" id="djUrlBox"></div>
-                    <div id="djQrcode" style="margin-top: 10px; margin-bottom: 15px; text-align: center;"></div>
-                    <a href="#" id="djLink" class="btn" style="margin-bottom: 25px;">DJページを開く</a>
-
-                    <hr style="border-color: rgba(255,255,255,0.1); margin: 20px 0;">
-
-                    <!-- VJロビー送信セクション -->
-                    <div class="glass-panel"
-                        style="margin-top: 10px; background: rgba(0, 255, 204, 0.05); border: 1px solid rgba(0, 255, 204, 0.3); padding: 12px;">
-                        <h3 style="font-size: 1rem; margin-top: 0; color: #00ffcc;">① VJロビーに送る（簡単連携）</h3>
-                        <p style="font-size: 0.8rem; margin-bottom: 8px;">VJから教えてもらった10文字のコードを入力してください</p>
-                        <div style="display: flex; flex-direction: column; gap: 8px;">
-                            <input type="text" id="lobbyCodeInput" placeholder="例: A3X7K9BC2D" maxlength="10"
-                                style="text-transform: uppercase; width: 100%; padding: 8px; font-weight: bold; letter-spacing: 2px; text-align: center;">
-                            <button type="button" class="btn btn-primary" id="pushToLobbyBtn"
-                                style="width: 100%; padding: 8px 16px; white-space: nowrap;">送信</button>
-                        </div>
-                        <div id="lobbyPushResult" style="display: none; margin-top: 8px; font-size: 0.85rem;"></div>
-                    </div>
-
-                    <div style="margin-top: 20px;">
-                        <h3 style="font-size: 1rem; margin-top: 0;">② VJ用 閲覧URL (手動共有)</h3>
-                        <p style="font-size: 0.8rem; margin-bottom: 8px;">※URLを開いた後、登録時のVJ用パスワードを入力してください</p>
-                        <div class="url-box" id="vjUrlBox"></div>
-                        <div style="display: flex; gap: 8px; margin-bottom: 15px;">
-                            <button type="button" id="shareVjUrlBtn" class="btn btn-primary" style="flex: 1;">📤
-                                VJ用URLを共有 /
-                                コピー</button>
-                        </div>
-                        <div id="vjQrcode" style="margin-top: 10px; margin-bottom: 15px; text-align: center;"></div>
-                        <a href="#" id="vjLink" class="btn" target="_blank" rel="noopener noreferrer">VJページを別タブで開く</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- QRコード生成ライブラリ (SRI: M-4) -->
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
-            integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"
-            referrerpolicy="no-referrer"></script>
-        <script src="assets/js/config.js"></script>
-        <script src="assets/js/parser.js"></script>
-        <script src="assets/js/register.js"></script>
+        <nav class="landing-nav" aria-label="サイト内ナビゲーション">
+            <a href="dj-register.html">DJ事前登録</a>
+            <a href="dj-manual.html">DJ説明書</a>
+            <a href="vj-manual.html">VJ説明書</a>
+            <a href="vj.html">VJロビー</a>
+        </nav>
+    </div>
 </body>
-
 </html>

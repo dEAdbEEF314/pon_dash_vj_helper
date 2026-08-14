@@ -98,7 +98,7 @@ test.describe('Real Playlist Visual Layout & Operations across Devices', () => {
                     // ----------------------------------------------------
                     // 1. 事前登録画面 ＆ プレイリストファイル解析操作
                     // ----------------------------------------------------
-                    await page.goto(`${host}/index.html`);
+                    await page.goto(`${host}/dj-register.html`);
                     await page.fill('#accountName', `SET_${pl.id.toUpperCase()}`);
                     await page.fill('#djPassword', '8888');
                     await page.fill('#vjPassword', '7777');
@@ -238,7 +238,7 @@ test.describe('Real Playlist Visual Layout & Operations across Devices', () => {
                                 // DJ2 を事前登録し、ロビーコードへプッシュ
                                 const dj2Context = await browser.newContext({ viewport: dev.viewport, deviceScaleFactor: 2 });
                                 const dj2Page = await dj2Context.newPage();
-                                await dj2Page.goto(`${host}/index.html`);
+                                await dj2Page.goto(`${host}/dj-register.html`);
                                 await dj2Page.fill('#accountName', 'DJ_GUEST_SET');
                                 await dj2Page.fill('#djPassword', '8888');
                                 await dj2Page.fill('#vjPassword', '7777');

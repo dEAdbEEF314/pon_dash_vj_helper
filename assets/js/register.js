@@ -7,6 +7,19 @@ document.addEventListener('DOMContentLoaded', () => {
     
     let parsedTracks = [];
 
+    // VDJ導線: VJロビーから渡されたコードは自動入力するが、自動送信はしない
+    const lobbyCodeInput = document.getElementById('lobbyCodeInput');
+    const lobbyCodeFromUrl = new URLSearchParams(window.location.search).get('lobby');
+    if (lobbyCodeInput && lobbyCodeFromUrl && /^[A-Za-z0-9]{10}$/.test(lobbyCodeFromUrl)) {
+        lobbyCodeInput.value = lobbyCodeFromUrl.toUpperCase();
+        lobbyCodeInput.dataset.prefilled = 'true';
+        lobbyCodeInput.setAttribute('aria-describedby', 'lobbyCodeHint');
+        const hint = lobbyCodeInput.parentElement?.previousElementSibling;
+        if (hint) {
+            hint.textContent = 'VJロビーコードを確認して「送信」を押してください（VDJ向け）';
+        }
+    }
+
     // ファイル選択時のプレビュー処理
     fileInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
@@ -65,9 +78,8 @@ document.addEventListener('DOMContentLoaded', () => {
         submitBtn.textContent = '登録中...';
 
         try {
-            const response = await fetch(`${API_BASE}/register.php`, {
+            const result = await apiRequest('register.php', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     accountName,
                     djPassword,
@@ -76,14 +88,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
             });
 
-            const result = await response.json();
-
             if (result.success) {
                 // 登録成功、URL表示
                 document.getElementById('registration-panel').classList.add('hidden');
                 document.getElementById('result-panel').classList.remove('hidden');
 
-                const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
+                // 登録ページが index.html / dj-register.html のどちらでも正しくルートを求める
+                const baseUrl = new URL('.', window.location.href).href;
                 
                 const djUrl = `${baseUrl}dj.html?sid=${result.sessionId}`;
                 // VJ用URLには認証情報を含めず、VJ側でパスワードを入力する
@@ -145,9 +156,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         pushResult.style.display = 'none';
 
                         try {
-                            const res = await fetch(`${API_BASE}/action.php?action=push_to_lobby`, {
+                            await apiRequest('action.php?action=push_to_lobby', {
                                 method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({
                                     lobbyCode: code,
                                     sessionId: result.sessionId,
@@ -155,14 +165,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                     djName: accountName
                                 })
                             });
-                            const data = await res.json();
-                            if (data.success) {
-                                pushResult.style.display = 'block';
-                                pushResult.style.color = '#00ffcc';
-                                pushResult.textContent = '✅ VJロビーへ送信成功！VJ画面に自動追加されました。';
-                            } else {
-                                throw new Error(data.error || '送信失敗');
-                            }
+                            pushResult.style.display = 'block';
+                            pushResult.style.color = '#00ffcc';
+                            pushResult.textContent = '✅ VJロビーへ送信成功！VJ画面に自動追加されました。';
                         } catch (e) {
                             pushResult.style.display = 'block';
                             pushResult.style.color = 'var(--danger-color, #ff3366)';
