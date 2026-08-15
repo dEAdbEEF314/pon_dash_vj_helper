@@ -1541,6 +1541,121 @@ body.app-page .container > header.app-header {
   box-shadow: 0 0 24px rgba(0, 255, 204, 0.08), 0 16px 38px rgba(0, 0, 0, 0.3);
 }
 
+/* VJ lobby entry screens share the landing/manual visual language */
+.vj-entry-shell {
+  width: min(100% - 24px, 460px);
+  margin: 0 auto;
+  padding: 18px 0 32px;
+}
+
+.vj-entry-nav {
+  margin-bottom: 14px;
+}
+
+.vj-entry-panel {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  max-width: none;
+  padding: 22px 20px;
+  text-align: center;
+  border-color: rgba(0, 255, 204, 0.25);
+  box-shadow: 0 0 22px rgba(0, 255, 204, 0.06), 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.vj-entry-panel::after {
+  position: absolute;
+  right: -70px;
+  top: -90px;
+  width: 190px;
+  height: 190px;
+  border: 1px solid rgba(255, 51, 102, 0.2);
+  border-radius: 50%;
+  box-shadow: 0 0 30px rgba(255, 51, 102, 0.1);
+  content: '';
+  pointer-events: none;
+}
+
+.vj-entry-eyebrow,
+.vj-entry-lead,
+.vj-entry-panel > h1,
+.vj-entry-panel > h2,
+.vj-entry-panel > p,
+.vj-entry-panel > a,
+.vj-entry-panel > button,
+.vj-entry-panel > form,
+.vj-entry-panel > details,
+.vj-entry-panel > hr {
+  position: relative;
+  z-index: 1;
+}
+
+.vj-entry-eyebrow {
+  margin-bottom: 7px;
+  color: var(--accent-color);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.vj-entry-panel h1 {
+  margin-bottom: 8px;
+  font-size: clamp(1.5rem, 5vw, 2rem);
+}
+
+.vj-entry-panel h2 {
+  margin-bottom: 10px;
+  color: var(--accent-color);
+  font-size: 1.2rem;
+}
+
+.vj-entry-lead {
+  margin: 0 auto 16px;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+
+.vj-entry-nav a {
+  min-height: 40px;
+}
+
+.vj-entry-panel .lobby-code-display {
+  text-shadow: 0 0 12px rgba(0, 255, 204, 0.55);
+}
+
+.vj-entry-panel .lobby-guide-details {
+  border-color: rgba(255, 51, 102, 0.35) !important;
+  background: rgba(255, 51, 102, 0.05) !important;
+  box-shadow: inset 0 0 18px rgba(255, 51, 102, 0.04);
+}
+
+.vj-entry-panel .lobby-guide-summary {
+  color: var(--danger-color) !important;
+}
+
+@media (max-width: 520px) {
+  .vj-entry-shell {
+    width: min(100% - 16px, 460px);
+    padding-top: 10px;
+  }
+
+  .vj-entry-nav {
+    gap: 6px;
+  }
+
+  .vj-entry-nav a {
+    flex: 1 1 calc(50% - 6px);
+    padding: 8px 6px;
+    font-size: 0.75rem;
+    text-align: center;
+  }
+
+  .vj-entry-panel {
+    padding: 18px 12px;
+  }
+}
+
 .manual-page .manual-hero::after {
   position: absolute;
   right: -80px;

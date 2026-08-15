@@ -21,8 +21,17 @@
 <body class="app-page">
     <!-- VJ ロビーモード / ログイン選択画面 -->
     <div class="login-screen" id="loginScreen">
-        <div class="glass-panel" style="max-width: 420px; width: 100%; text-align: center;" id="modeSelectPanel">
-            <h2>Pon Dash VJ Helper (仮)</h2>
+        <div class="vj-entry-shell">
+            <nav class="page-nav vj-entry-nav" aria-label="サイト内ナビゲーション">
+                <a href="index.html">概要</a>
+                <a href="dj-register.html">DJ事前登録</a>
+                <a href="dj-manual.html">DJ説明書</a>
+                <a href="vj-manual.html">VJ説明書</a>
+            </nav>
+            <div class="glass-panel vj-entry-panel" id="modeSelectPanel">
+                <p class="vj-entry-eyebrow">PON DASH VJ HELPER / VJ LOBBY</p>
+                <h1>VJロビーを開く</h1>
+                <p class="vj-entry-lead">DJから届く曲情報を受け取り、素材を検索してREADYを返します。スマートフォン・PCのどちらからでも利用できます。</p>
             <a href="dj-register.html" class="btn" style="width: 100%; display: inline-block; margin-bottom: 20px;">
                 🎧 DJの方はこちら（事前登録へ）
             </a>
@@ -36,10 +45,10 @@
             <button type="button" class="btn" id="showDirectLoginBtn" style="width: 100%;">
                 🔑 単一セッションに直接ログイン
             </button>
-        </div>
+            </div>
 
-        <!-- 1. VJロビー画面 -->
-        <div class="glass-panel hidden" style="max-width: 420px; width: 100%; text-align: center;" id="lobbyScreen">
+            <!-- 1. VJロビー画面 -->
+            <div class="glass-panel hidden vj-entry-panel" id="lobbyScreen">
             <h2 style="font-size: 1.2rem; margin-bottom: 5px;">VJ Lobby</h2>
             <p style="font-size: 0.8rem; margin: 0;">DJに以下のコードを伝えてください</p>
 
@@ -159,10 +168,10 @@
                     </div>
                 </div>
             </details>
-        </div>
+            </div>
 
-        <!-- 2. 直接ログインフォーム -->
-        <div class="glass-panel hidden" style="max-width: 400px; width: 100%;" id="directLoginForm">
+            <!-- 2. 直接ログインフォーム -->
+            <div class="glass-panel hidden vj-entry-panel" id="directLoginForm">
             <h2>VJ Direct Login</h2>
             <form id="loginForm">
                 <div class="form-group">
@@ -174,6 +183,7 @@
                 <div id="loginError" style="color: var(--danger-color); margin-top: 10px; display: none;">パスワードが違います
                 </div>
             </form>
+            </div>
         </div>
     </div>
 
