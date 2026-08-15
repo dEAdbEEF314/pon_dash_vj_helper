@@ -49,6 +49,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // セッション Map<sessionId, SessionObject>
     const sessions = new Map();
+    const processingSessionIds = new Set();
     let activeSessionId = null;
 
     // --- LocalStorage ヘルパー ---
@@ -251,7 +252,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (data.success) {
                 setupLobbySubscription(code);
                 if (Array.isArray(data.sessions)) {
-                    data.sessions.forEach(s => handlePushedSession(s.sessionId, s.inviteToken, s.djName));
+                    await Promise.all(data.sessions.map(s => handlePushedSession(s.sessionId, s.inviteToken, s.djName)));
                 }
             } else {
                 // 期限切れや削除済みの場合はローカルストレージもクリア
@@ -288,7 +289,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 body: JSON.stringify({ lobbyCode: code })
             });
             if (data.success && Array.isArray(data.sessions)) {
-                data.sessions.forEach(s => handlePushedSession(s.sessionId, s.inviteToken, s.djName));
+                await Promise.all(data.sessions.map(s => handlePushedSession(s.sessionId, s.inviteToken, s.djName)));
             } else if (
                 !data.success
                 && ['expired', 'not found', 'deleted'].some(term => (data.error || '').includes(term))
@@ -301,37 +302,52 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // BUG FIX: 一覧と件数をsessionsから同時に再描画し、非同期登録前の件数読み取りを防止する。
+    function renderLobbySessions() {
+        if (!lobbySessionList || !lobbySessionCount) return;
+
+        lobbySessionList.innerHTML = '';
+        sessions.forEach((session) => {
+            const item = document.createElement('div');
+            item.style.cssText = "display: flex; justify-content: space-between; padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.85rem;";
+
+            const accountLabel = document.createElement('span');
+            accountLabel.style.cssText = 'font-weight: bold; color: #00ffcc;';
+            accountLabel.textContent = `🎧 ${session.djName || 'DJ'}`;
+
+            const linkedLabel = document.createElement('span');
+            linkedLabel.style.color = '#64748b';
+            linkedLabel.textContent = '連携済み';
+            item.append(accountLabel, linkedLabel);
+            lobbySessionList.appendChild(item);
+        });
+
+        lobbySessionCount.textContent = String(sessions.size);
+        if (lobbyEmptyMsg) {
+            lobbyEmptyMsg.style.display = sessions.size === 0 ? '' : 'none';
+            if (sessions.size === 0) lobbySessionList.appendChild(lobbyEmptyMsg);
+        }
+        if (enterVjModeBtn) enterVjModeBtn.disabled = sessions.size === 0;
+    }
+
+    // BUG FIX: Pusher通知とポーリングの同時到着による同一セッションの二重ログインを防止する。
     async function handlePushedSession(sessionId, inviteToken, djName) {
+        if (!sessionId || !inviteToken || sessions.has(sessionId) || processingSessionIds.has(sessionId)) return;
+
+        processingSessionIds.add(sessionId);
         try {
-            if (!sessionId || !inviteToken) return;
-
-            if (sessions.has(sessionId)) return;
-
             const data = await apiRequest('action.php?action=login&role=vj', {
                 method: 'POST',
                 body: JSON.stringify({ sessionId, inviteToken })
             });
             if (data.success) {
-                addSession(sessionId, null, data, djName);
-                
-                if (lobbyEmptyMsg) lobbyEmptyMsg.style.display = 'none';
-                
-                const item = document.createElement('div');
-                item.style.cssText = "display: flex; justify-content: space-between; padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.85rem;";
-                const accountLabel = document.createElement('span');
-                accountLabel.style.cssText = 'font-weight: bold; color: #00ffcc;';
-                accountLabel.textContent = `🎧 ${data.state.accountName || djName}`;
-                const linkedLabel = document.createElement('span');
-                linkedLabel.style.color = '#64748b';
-                linkedLabel.textContent = '連携済み';
-                item.append(accountLabel, linkedLabel);
-                lobbySessionList.appendChild(item);
-
-                lobbySessionCount.textContent = sessions.size;
-                enterVjModeBtn.disabled = false;
+                await addSession(sessionId, null, data, djName);
+                renderLobbySessions();
             }
         } catch (e) {
             console.error("ロビーセッション追加エラー", e);
+        } finally {
+            processingSessionIds.delete(sessionId);
         }
     }
 
@@ -405,7 +421,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 tracks: loginData.state.tracks,
                 nowPlayingIdx: loginData.state.nowPlayingIdx,
                 sentIdx: loginData.state.sentIdx,
-                customTrack: loginData.state.customTrack || null
+                customTrack: loginData.state.customTrack || null,
+                vjReady: false
             },
             hasUnread: false
         };
@@ -418,6 +435,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (data.action === 'send') {
                 sessionObj.state.sentIdx = data.sentIdx;
                 sessionObj.state.customTrack = data.customTrack || null;
+                sessionObj.state.vjReady = false;
                 if (activeSessionId === sessionId) {
                     renderPlaylist();
                     updateDisplay();
@@ -428,12 +446,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             } else if (data.action === 'auto-next') {
                 sessionObj.state.nowPlayingIdx = data.nowPlayingIdx;
+                sessionObj.state.vjReady = false;
                 if (activeSessionId === sessionId) {
                     renderPlaylist();
                     updateDisplay();
                 }
             } else if (data.action === 'vj-ready') {
+                sessionObj.state.vjReady = true;
                 if (activeSessionId === sessionId) {
+                    updateDisplay();
                     flashSendBox('is-flashing-success');
                 }
             }
@@ -475,6 +496,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         sessions.delete(sessionId);
         if (activeSessionId === sessionId) activeSessionId = null;
         saveSessions();
+        renderLobbySessions();
 
         if (sessions.size > 0) {
             const nextSid = Array.from(sessions.keys())[0];
@@ -638,6 +660,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!current) return;
 
         const { tracks, nowPlayingIdx, sentIdx, customTrack } = current.state;
+
+        const readyBadge = document.getElementById('vjReadyBadge');
+        if (readyBadge) {
+            readyBadge.style.display = current.state.vjReady ? 'inline-block' : 'none';
+        }
 
         const sendTitleEl = document.getElementById('sendTitle');
         const sendArtistEl = document.getElementById('sendArtist');
@@ -844,6 +871,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     method: 'POST',
                     body: JSON.stringify({ sessionId: current.sessionId, token: current.token })
                 });
+                current.state.vjReady = true;
+                updateDisplay();
                 flashSendBox('is-flashing-success');
             } catch(e) {
                 console.error("READY送信エラー", e);

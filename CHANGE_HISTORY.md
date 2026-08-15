@@ -1,3 +1,4 @@
+日時（2026/08/15 19:48:00）: VJロビーの「連携済みDJセッション」一覧と件数をsessions基準の単一再描画へ統一し、Pusher通知・ポーリング重複時のセッションID単位ロックと非同期登録完了待機を追加。件数が実接続数より1少なく表示される不具合の回帰テストを追加 (assets/js/vj.js, docs/PDVH.md, tests/04_e2e_vj_lobby.spec.js, tests/run_all_tests.sh)
 日時（2026/08/13 18:34:22）: DJ画面の上部ヘッダーをタイトル左寄せ・削除ボタン右寄せの横並びに変更し、削除ボタンを少し小型化 (dj.html, assets/css/style.css)
 日時（2026/08/13）: DJ/VJの8時間セッション復帰（認証情報を保存せずsidのみ保存）、サーバー側の8時間JSON自動削除、認証済み手動削除API、DJ/VJ削除UI、ロビー削除通知を追加 (backend/api/action.php, backend/api/register.php, assets/js/dj.js, assets/js/vj.js, dj.html, docs/PDVH.md, README.md, tests/02_api_integration.spec.js)
 日時（2026/08/12 23:17:15）: SEND時のフラッシュ通知をDJ/VJページともに3秒間に合計3回、背景色を黒→青→白→青→黒と滑らかに変更するアニメーションに変更し、解除タイマーを3000msに更新 (assets/css/style.css, assets/js/dj.js, assets/js/vj.js)

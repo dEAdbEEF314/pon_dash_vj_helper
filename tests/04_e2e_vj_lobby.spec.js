@@ -50,6 +50,15 @@ test.describe('E2E Test: VJ Lobby & Multi-DJ Session Flow', () => {
             await dj1Page.click('#pushToLobbyBtn');
         }
 
+        // 連携処理完了後は一覧行数と件数表示が一致し、1件少なくならないことを確認
+        await vjPage.waitForFunction(() => {
+            const count = Number(document.getElementById('lobbySessionCount')?.textContent || '-1');
+            const rows = Array.from(document.querySelectorAll('#lobbySessionList > div'))
+                .filter(row => row.id !== 'lobbyEmptyMsg');
+            return count === 1 && rows.length === count;
+        }, { timeout: 10000 });
+        await expect(vjPage.locator('#lobbySessionCount')).toHaveText('1');
+
         await vjContext.close();
         await dj1Context.close();
     });
