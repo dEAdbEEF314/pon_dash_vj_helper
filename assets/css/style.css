@@ -745,12 +745,16 @@ input[type="file"] {
   bottom: 0;
   background: var(--bg-color);
   display: flex;
-  justify-content: center;
-  align-items: center;
   z-index: 1000;
   padding: 20px 10px;
   overflow-y: auto;
   box-sizing: border-box;
+}
+
+/* margin: auto (instead of align-items/justify-content: center) keeps the
+   overflowing content scrollable to its top edge when it exceeds the viewport */
+.login-screen > * {
+  margin: auto;
 }
 
 .lobby-guide-details {
@@ -967,6 +971,11 @@ body.app-page .container > header.app-header {
     backdrop-filter: blur(10px);
     padding: 24px;
     margin: 20px auto;
+  }
+
+  /* VJロビー前のエントリー画面: 事前登録ページ(index-page)と同じ600px幅フレームに揃える */
+  .vj-entry-shell {
+    width: 600px !important;
   }
 
   /* DJ/VJページ: 450px幅 x 100dvh(最大840px) で1画面中央配置 */
