@@ -173,7 +173,7 @@ VJの素材検索と進捗管理を最大効率化するUI。
 
 ## 8. テスト体制 ＆ 自動テスト仕様 (Playwright / Docker)
 
-本プロジェクトでは品質担保のため、**4階層の自動テストスイート (計10テストケース)** を整備し、Docker環境でシームレスに一括検証できるテスト体制を構築しています。
+本プロジェクトでは品質担保のため、**4階層の自動テストスイートに加えて、1VJ対複数DJおよび事故復旧シナリオ**を整備し、Docker環境でシームレスに一括検証できるテスト体制を構築しています。
 
 ```
 +-------------------------------------------------------------------+
@@ -183,7 +183,8 @@ VJの素材検索と進捗管理を最大効率化するUI。
 |  2. API統合テスト (Integration)  | PHPバックエンド (register/action)   |
 |  3. シナリオE2E (Single Session)| DJ・VJ間の選曲/READY一巡フロー     |
 |  4. シナリオE2E (VJ Lobby)      | 10文字コード生成 & 複数DJ接続      |
-|  5. UI仕様適合テスト (Alignment)| PC 450px枠 / 全画面フラッシュ / 4ボタン|
+|  5. シナリオE2E (Multi-DJ)       | 3実プレイリスト、複数SEND、追加・削除、リロード・ブラウザ閉鎖復旧 |
+|  6. UI仕様適合テスト (Alignment)| PC 450px枠 / 全画面フラッシュ / 4ボタン|
 +-------------------------------------------------------------------+
 ```
 
@@ -195,6 +196,7 @@ VJの素材検索と進捗管理を最大効率化するUI。
 | **API統合テスト** | [`tests/02_api_integration.spec.js`](file:///workspace/pon_dash_vj_helper/tests/02_api_integration.spec.js) | `config.php`, `register.php` (セッション発行), `action.php` (SEND/VIBES/READY) 端点動作 | 3 |
 | **E2E シナリオ (単一)** | [`tests/03_e2e_single_session.spec.js`](file:///workspace/pon_dash_vj_helper/tests/03_e2e_single_session.spec.js) | 事前登録 〜 DJ/VJログイン 〜 SEND 〜 READY フィードバックの一巡テスト | 1 |
 | **E2E シナリオ (ロビー)** | [`tests/04_e2e_vj_lobby.spec.js`](file:///workspace/pon_dash_vj_helper/tests/04_e2e_vj_lobby.spec.js) | VJロビーコード発行 (10文字) 〜 DJロビーコード連携 〜 ロビー画面接続検証 | 1 |
+| **E2E シナリオ (Multi-DJ)** | [`tests/05_e2e_multi_dj.spec.js`](file:///workspace/pon_dash_vj_helper/tests/05_e2e_multi_dj.spec.js) | 3つのM3U8、1VJ対3DJ、SEND、未読、削除、DJ/VJリロード・ブラウザ閉鎖後の復旧 | 1 |
 | **UI仕様適合テスト** | [`tests/spec_alignment.spec.js`](file:///workspace/pon_dash_vj_helper/tests/spec_alignment.spec.js) | PC 450pxフレーム枠、素材検索4ボタン、画面全体フラッシュクラス発火検証 | 1 |
 
 ### 8.2 一括テスト実行コマンド

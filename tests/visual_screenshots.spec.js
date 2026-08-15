@@ -49,6 +49,24 @@ test.describe('Real Playlist Visual Layout & Operations across Devices', () => {
                         fs.mkdirSync(screenshotDir, { recursive: true });
                     }
 
+                    const waitForFlashToFinish = async () => {
+                        await page.waitForFunction(() => ![
+                            document.body,
+                            document.getElementById('mainApp'),
+                            document.querySelector('.container'),
+                            document.getElementById('sendTrackBox')
+                        ].some(el => el && (
+                            el.classList.contains('is-flashing-danger')
+                            || el.classList.contains('is-flashing-success')
+                        )), { timeout: 5000 }).catch(() => {});
+                        await page.waitForTimeout(50);
+                    };
+
+                    const captureScreenshot = async (filePath, options = {}) => {
+                        await waitForFlashToFinish();
+                        await page.screenshot({ path: filePath, ...options });
+                    };
+
                     const checkLayoutFit = async (phaseName) => {
                         const overflowData = await page.evaluate(() => {
                             const docWidth = document.documentElement.clientWidth;
@@ -109,7 +127,7 @@ test.describe('Real Playlist Visual Layout & Operations across Devices', () => {
                     // プレビュー表示待ち
                     await page.waitForSelector('#previewArea', { state: 'visible', timeout: 3000 }).catch(() => {});
                     await checkLayoutFit('01_index_preview');
-                    await page.screenshot({ path: path.join(screenshotDir, '01_index_preview.png'), fullPage: true });
+                    await captureScreenshot(path.join(screenshotDir, '01_index_preview.png'), { fullPage: true });
 
                     // 登録ボタン押下
                     await page.click('#registerBtn');
@@ -118,7 +136,7 @@ test.describe('Real Playlist Visual Layout & Operations across Devices', () => {
                         return panel && !panel.classList.contains('hidden');
                     }, { timeout: 8000 }).catch(() => {});
                     await checkLayoutFit('02_index_registered');
-                    await page.screenshot({ path: path.join(screenshotDir, '02_index_registered.png'), fullPage: true });
+                    await captureScreenshot(path.join(screenshotDir, '02_index_registered.png'), { fullPage: true });
 
                     const djUrlBox = page.locator('#djUrlBox');
                     const vjUrlBox = page.locator('#vjUrlBox');
@@ -144,7 +162,7 @@ test.describe('Real Playlist Visual Layout & Operations across Devices', () => {
 
                             console.log('Step 03_dj_main');
                             await checkLayoutFit('03_dj_main');
-                            await page.screenshot({ path: path.join(screenshotDir, '03_dj_main.png') });
+                            await captureScreenshot(path.join(screenshotDir, '03_dj_main.png'));
 
                             // DJページ: VIBES! ボタン押下 (手入力モーダル) 外観 & 機能テスト
                             console.log('Step 03b_dj_vibes_modal');
@@ -155,7 +173,7 @@ test.describe('Real Playlist Visual Layout & Operations across Devices', () => {
                                 // フェードインアニメーション完了待ち (300ms)
                                 await page.waitForTimeout(300);
                                 await checkLayoutFit('03b_dj_vibes_modal');
-                                await page.screenshot({ path: path.join(screenshotDir, '03b_dj_vibes_modal.png') });
+                                await captureScreenshot(path.join(screenshotDir, '03b_dj_vibes_modal.png'));
 
                                 // VIBES! フォームプリセットクリック＆送信機能テスト
                                 const presetBtn = page.locator('.vibes-preset-btn').first();
@@ -183,7 +201,7 @@ test.describe('Real Playlist Visual Layout & Operations across Devices', () => {
                             });
                             await page.waitForTimeout(200);
                             await checkLayoutFit('03b2_dj_vibes_and_vj_ready');
-                            await page.screenshot({ path: path.join(screenshotDir, '03b2_dj_vibes_and_vj_ready.png') });
+                            await captureScreenshot(path.join(screenshotDir, '03b2_dj_vibes_and_vj_ready.png'));
 
                             // DJページ: VJ検索タブ 外観テスト
                             console.log('Step 03c_dj_vj_search');
@@ -194,7 +212,7 @@ test.describe('Real Playlist Visual Layout & Operations across Devices', () => {
                                 const djSearchBtnsCount = await page.$$eval('#djSearchLinksSend button', els => els.length).catch(() => 0);
                                 expect(djSearchBtnsCount).toBe(4);
                                 await checkLayoutFit('03c_dj_vj_search');
-                                await page.screenshot({ path: path.join(screenshotDir, '03c_dj_vj_search.png') });
+                                await captureScreenshot(path.join(screenshotDir, '03c_dj_vj_search.png'));
 
                                 // DJ操作タブに戻る
                                 const djTabBtn = page.locator('button[data-tab="dj"]');
@@ -212,7 +230,7 @@ test.describe('Real Playlist Visual Layout & Operations across Devices', () => {
                                 await page.waitForSelector('#sendTrackBox', { state: 'visible' }).catch(() => {});
                             }
                             await checkLayoutFit('04_dj_after_send');
-                            await page.screenshot({ path: path.join(screenshotDir, '04_dj_after_send.png') });
+                            await captureScreenshot(path.join(screenshotDir, '04_dj_after_send.png'));
 
                             // ----------------------------------------------------
                             // 3. VJロビー画面 ＆ 複数DJ連携外観テスト (05a: VJモード開始前)
@@ -290,7 +308,7 @@ test.describe('Real Playlist Visual Layout & Operations across Devices', () => {
 
                                 // 05a_vj_lobby_multi_djs 外観テスト (VJモード開始ボタン押下前の複数DJ連携ロビー画面)
                                 await checkLayoutFit('05a_vj_lobby_multi_djs');
-                                await page.screenshot({ path: path.join(screenshotDir, '05a_vj_lobby_multi_djs.png') });
+                                await captureScreenshot(path.join(screenshotDir, '05a_vj_lobby_multi_djs.png'));
 
                                 // ----------------------------------------------------
                                 // 4. VJモード開始 ＆ VJ VIEW操作画面外観テスト (05: VJモード開始後)
@@ -319,7 +337,7 @@ test.describe('Real Playlist Visual Layout & Operations across Devices', () => {
                                 const searchBtnsCount = await page.$$eval('#searchLinksSend button', els => els.length).catch(() => 0);
                                 expect(searchBtnsCount).toBe(4);
                                 await checkLayoutFit('05_vj_main');
-                                await page.screenshot({ path: path.join(screenshotDir, '05_vj_main.png') });
+                                await captureScreenshot(path.join(screenshotDir, '05_vj_main.png'));
 
                                 // ----------------------------------------------------
                                 // 5. セッション追加モーダル (+追加ボタン押下) 外観 & 挙動テスト
@@ -333,7 +351,7 @@ test.describe('Real Playlist Visual Layout & Operations across Devices', () => {
 
                                     // 06a_vj_add_session_modal 外観テスト (セッション追加モーダル)
                                     await checkLayoutFit('06a_vj_add_session_modal');
-                                    await page.screenshot({ path: path.join(screenshotDir, '06a_vj_add_session_modal.png') });
+                                    await captureScreenshot(path.join(screenshotDir, '06a_vj_add_session_modal.png'));
 
                                     // モーダルキャンセルボタンで閉じる
                                     await page.click('#modalCloseBtn').catch(() => {});
@@ -343,7 +361,7 @@ test.describe('Real Playlist Visual Layout & Operations across Devices', () => {
                                 // 06b_vj_multi_dj 外観テスト (複数DJが並ぶセッションタブバー)
                                 console.log('Step 06b_vj_multi_dj');
                                 await checkLayoutFit('06b_vj_multi_dj');
-                                await page.screenshot({ path: path.join(screenshotDir, '06b_vj_multi_dj.png') });
+                                await captureScreenshot(path.join(screenshotDir, '06b_vj_multi_dj.png'));
 
                                 // ----------------------------------------------------
                                 // 5. 非アクティブDJからのSEND受信通知 (未読赤点バッジ) 外観テスト
@@ -363,7 +381,7 @@ test.describe('Real Playlist Visual Layout & Operations across Devices', () => {
                                     // VJ画面にて DJ2のタブに未読バッジ (badge-unread) が点灯した状態をキャプチャ
                                     await page.waitForTimeout(500);
                                     await checkLayoutFit('07_vj_unread_from_other_dj');
-                                    await page.screenshot({ path: path.join(screenshotDir, '07_vj_unread_from_other_dj.png') });
+                                    await captureScreenshot(path.join(screenshotDir, '07_vj_unread_from_other_dj.png'));
                                 }
 
                                 await dj2Context.close().catch(() => {});
@@ -375,7 +393,7 @@ test.describe('Real Playlist Visual Layout & Operations across Devices', () => {
                                 await page.click('#loginForm button[type="submit"]').catch(() => {});
                                 await page.waitForSelector('#mainApp', { state: 'visible' }).catch(() => {});
                                 await checkLayoutFit('05_vj_main');
-                                await page.screenshot({ path: path.join(screenshotDir, '05_vj_main.png') });
+                                await captureScreenshot(path.join(screenshotDir, '05_vj_main.png'));
                             }
                         }
                     }

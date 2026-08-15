@@ -80,7 +80,7 @@ test.describe('Integration Test: Backend API Endpoints', () => {
         const vjToken = vjData.token;
 
         const readyRes = await request.post(`${host}/backend/api/action.php?action=ready&role=vj`, {
-            data: { sessionId, token: vjToken }
+            data: { sessionId, token: vjToken, readyForVersion: vibesJson.stateVersion }
         });
         expect(readyRes.status()).toBe(200);
         const readyJson = await readyRes.json();
@@ -116,21 +116,21 @@ test.describe('Integration Test: Backend API Endpoints', () => {
         expect(pushData.success).toBe(true);
 
         const pollRes = await request.post(`${host}/backend/api/action.php?action=poll_lobby`, {
-            data: { lobbyCode: lobbyData.lobbyCode }
+            data: { lobbyCode: lobbyData.lobbyCode, knownSessionIds: [], knownTokenHashes: {} }
         });
         const pollData = await pollRes.json();
         expect(pollData.success).toBe(true);
-        expect(pollData.sessions[0]).not.toHaveProperty('vjUrl');
-        expect(pollData.sessions[0].inviteToken).toBeTruthy();
+        expect(pollData.added[0]).not.toHaveProperty('vjUrl');
+        expect(pollData.added[0].inviteToken).toBeTruthy();
 
         const inviteLoginRes = await request.post(`${host}/backend/api/action.php?action=login&role=vj`, {
-            data: { sessionId: regData.sessionId, inviteToken: pollData.sessions[0].inviteToken }
+            data: { sessionId: regData.sessionId, inviteToken: pollData.added[0].inviteToken }
         });
         const inviteLoginData = await inviteLoginRes.json();
         expect(inviteLoginData.success).toBe(true);
 
         const replayRes = await request.post(`${host}/backend/api/action.php?action=login&role=vj`, {
-            data: { sessionId: regData.sessionId, inviteToken: pollData.sessions[0].inviteToken }
+            data: { sessionId: regData.sessionId, inviteToken: pollData.added[0].inviteToken }
         });
         const replayData = await replayRes.json();
         expect(replayData.success).toBe(false);
@@ -198,5 +198,129 @@ test.describe('Integration Test: Backend API Endpoints', () => {
             data: { sessionId, token, sendIdx: 0 }
         });
         expect((await afterDeletion.json()).success).toBe(false);
+    });
+
+    test('one VJ can manage three DJ sessions with independent real playlists, SEND, deletion, and recovery', async ({ request }) => {
+        const fs = require('fs');
+        const path = require('path');
+        const playlists = [
+            { name: 'DJ_ALPHA', file: '20250224_playlist_1.m3u8', password: '3101' },
+            { name: 'DJ_BETA', file: '20260131_playlist_2.m3u8', password: '3102' },
+            { name: 'DJ_GAMMA', file: '20260514_playlist_3.m3u8', password: '3103' }
+        ];
+        const parseM3U8 = (file) => fs.readFileSync(path.join(__dirname, file), 'utf8')
+            .split(/\r?\n/)
+            .filter(line => line.startsWith('#EXTINF:'))
+            .map(line => {
+                const text = line.slice(line.indexOf(',') + 1).trim();
+                const [artist, ...title] = text.split(' - ');
+                return { artist: artist.trim(), title: title.join(' - ').trim() || artist.trim() };
+            });
+
+        const lobby = await (await request.post(`${host}/backend/api/action.php?action=create_lobby`, { data: {} })).json();
+        expect(lobby.success).toBe(true);
+
+        const sessions = [];
+        for (const playlist of playlists) {
+            const tracks = parseM3U8(playlist.file);
+            expect(tracks.length).toBeGreaterThan(0);
+            const registration = await request.post(`${host}/backend/api/register.php`, {
+                data: {
+                    accountName: playlist.name,
+                    djPassword: playlist.password,
+                    vjPassword: '3199',
+                    tracks
+                }
+            });
+            const registrationData = await registration.json();
+            expect(registrationData.success).toBe(true);
+
+            const push = await request.post(`${host}/backend/api/action.php?action=push_to_lobby`, {
+                data: {
+                    lobbyCode: lobby.lobbyCode,
+                    sessionId: registrationData.sessionId,
+                    vjPassword: '3199',
+                    djName: playlist.name
+                }
+            });
+            expect((await push.json()).success).toBe(true);
+            sessions.push({ ...playlist, sessionId: registrationData.sessionId, tracks });
+        }
+
+        const initialPoll = await (await request.post(`${host}/backend/api/action.php?action=poll_lobby`, {
+            data: { lobbyCode: lobby.lobbyCode, knownSessionIds: [], knownTokenHashes: {} }
+        })).json();
+        expect(initialPoll.success).toBe(true);
+        expect(initialPoll.added).toHaveLength(3);
+
+        const vjTokens = {};
+        for (const added of initialPoll.added) {
+            const login = await request.post(`${host}/backend/api/action.php?action=login&role=vj`, {
+                data: { sessionId: added.sessionId, inviteToken: added.inviteToken }
+            });
+            const data = await login.json();
+            expect(data.success).toBe(true);
+            expect(data.state.tracks[0]).toEqual(sessions.find(s => s.sessionId === added.sessionId).tracks[0]);
+            vjTokens[added.sessionId] = data.token;
+        }
+
+        const djTokens = {};
+        for (const session of sessions) {
+            const login = await request.post(`${host}/backend/api/action.php?action=login&role=dj`, {
+                data: { sessionId: session.sessionId, password: session.password }
+            });
+            const data = await login.json();
+            expect(data.success).toBe(true);
+            djTokens[session.sessionId] = data.token;
+        }
+
+        for (const [index, session] of sessions.entries()) {
+            const send = await request.post(`${host}/backend/api/action.php?action=send&role=dj`, {
+                data: { sessionId: session.sessionId, token: djTokens[session.sessionId], sendIdx: index }
+            });
+            const data = await send.json();
+            expect(data.success).toBe(true);
+            expect(data.sentIdx).toBe(index);
+            expect(data.stateVersion).toBe(1);
+        }
+
+        const beta = sessions[1];
+        const deleteBeta = await request.post(`${host}/backend/api/action.php?action=delete_session&role=vj`, {
+            data: { sessionId: beta.sessionId, token: vjTokens[beta.sessionId] }
+        });
+        expect((await deleteBeta.json()).success).toBe(true);
+
+        const afterRemoval = await (await request.post(`${host}/backend/api/action.php?action=poll_lobby`, {
+            data: {
+                lobbyCode: lobby.lobbyCode,
+                knownSessionIds: sessions.map(s => s.sessionId),
+                knownTokenHashes: Object.fromEntries(initialPoll.added.map(item => [item.sessionId, item.inviteTokenHash]))
+            }
+        })).json();
+        expect(afterRemoval.success).toBe(true);
+        expect(afterRemoval.removedSessionIds).toEqual([beta.sessionId]);
+
+        const deletedSend = await request.post(`${host}/backend/api/action.php?action=send&role=dj`, {
+            data: { sessionId: beta.sessionId, token: djTokens[beta.sessionId], sendIdx: 0 }
+        });
+        expect((await deletedSend.json()).success).toBe(false);
+
+        for (const session of [sessions[0], sessions[2]]) {
+            const recoveryLogin = await request.post(`${host}/backend/api/action.php?action=login&role=dj`, {
+                data: { sessionId: session.sessionId, password: session.password }
+            });
+            const recovery = await recoveryLogin.json();
+            expect(recovery.success).toBe(true);
+            expect(recovery.state.tracks[0]).toEqual(session.tracks[0]);
+            const recoveredSend = await request.post(`${host}/backend/api/action.php?action=send&role=dj`, {
+                data: { sessionId: session.sessionId, token: recovery.token, sendIdx: 0 }
+            });
+            expect((await recoveredSend.json()).success).toBe(true);
+        }
+
+        const vjRecovery = await request.post(`${host}/backend/api/action.php?action=login&role=vj`, {
+            data: { sessionId: sessions[0].sessionId, password: '3199' }
+        });
+        expect((await vjRecovery.json()).success).toBe(true);
     });
 });
