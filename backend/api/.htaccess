@@ -1,9 +1,37 @@
-# 環境設定ファイル (.env, env.php, env.php.example 等) への直接アクセスを完全遮断
-<FilesMatch "^\.env|env\.php">
-    Order allow,deny
-    Deny from all
-    # Apache 2.4+ 互換
+# backend/api/.htaccess - さくらのレンタルサーバ（ライトプラン含む）対応 API最適化 & セキュリティ
+
+# ディレクトリ一覧表示の無効化
+Options -Indexes
+
+# ==============================================================================
+# 1. 環境設定・機密ファイル（.env, env.php, *.log, *.json 等）への直接アクセス遮断
+# ==============================================================================
+<FilesMatch "^(\.env|env\.php|\.htaccess|.*\.log|.*\.json|.*\.ini|.*\.md)">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
 </FilesMatch>
+
+# ==============================================================================
+# 2. リアルタイムAPIのキャッシュ防止（同期ズレ防止 & 常に最新状態取得）
+# ==============================================================================
+<IfModule mod_expires.c>
+    ExpiresActive Off
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header always set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+    Header always set Pragma "no-cache"
+    Header always set Expires "0"
+</IfModule>
+
+# ==============================================================================
+# 3. APIレスポンス (JSON) の GZIP 圧縮（転送速度向上 & 帯域削減）
+# ==============================================================================
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE application/json
+</IfModule>

@@ -1,3 +1,7 @@
+2026/08/20 00:32:00: backend/api/.htaccess および backend/data/.htaccess のセキュリティ・最適化更新 - (1) backend/api/.htaccess: リアルタイムAPIの同期ズレ防止のため mod_expires 無効化・厳格な Cache-Control (no-store, no-cache, must-revalidate) を追加、JSONレスポンスの GZIP 圧縮 (mod_deflate) を追加、機密ファイル遮断の Apache 2.4/2.2 両対応。(2) backend/data/.htaccess & register.php: データディレクトリの直接Webアクセス遮断ルールを Apache 2.4 (Require all denied) および 2.2 (Deny from all) 両対応に更新、Options -Indexes を追加。
+2026/08/19 23:38:00: PC/スマホ全般およびさくらのレンタルサーバ（ライトプラン含む）向けパフォーマンス最適化 - (1) .htaccess: mod_deflateによるGZIP圧縮（転送量約60〜70%削減）、mod_expiresによる静的アセット（CSS/JS/画像/フォント/SVG）のブラウザキャッシュ、Varyヘッダー設定を追加（500エラーを招くphp_value等は非記述）。(2) php.ini.recommended: さくらのコントロールパネル「php.ini設定」用テンプレート（OPcache有効化、zlib出力自動圧縮、メモリ・実行時間・エラー設定）を作成。(3) favicon.svg: 717KBのBase64埋め込みJPEGを1.5KBのクリーンなベクターSVGに置換し全ページの初期ロード帯域を99.7%削減。(4) assets/css/style.css: bodyのbackground-attachment:fixedをbody::before擬似要素（GPU合成・固定レイヤー）に分離しモバイルでのスクロール時全画面再ペイント（Jank）を完全解消、prefers-reduced-motion対応を追加。(5) assets/js/dj.js, vj.js: applyMarquee()にテキスト差分ガード(dataset.lastMarqueeText)を追加し不要なレイアウトスラッシング（Forced Reflow）を防止。(6) assets/js/vj.js: renderSessionTabs()を差分更新化（セッション不変時はDOM破棄をスキップしクラス・バッジのみ更新）。(7) assets/js/register.js: プレビュー描画をDocumentFragment一括挿入に変更。(8) backend/api/action.php, register.php: apiLog()に512KB上限のログローテーション（api.log.old）を追加、GC対象に古いレートリミット一時ファイル(.rate_*.json)のクリーンアップを追加。
+2026/08/19 23:22:00: パフォーマンス改善 - (1) backend/api/action.php, register.php: garbageCollectExpiredData()を毎リクエスト実行→2%確率実行に変更、file_get_contents+json_decodeをfilemtimeベースの軽量判定に置換（415ファイル全読込を解消）。(2) action.php: removeSessionFromLobbies()に期限切れロビーのスキップ・削除と変更がない場合の書き戻しスキップを追加。(3) assets/css/style.css: 重複@keyframes 3個（flashMint/flashDanger/flashSuccess）を削除、フラッシュアニメーションをbodyのみに適用し子要素はbackground:transparent+backdrop-filter:noneで透過、will-change追加でGPU合成促進、box-shadow変更をキーフレームから除去。(4) assets/js/dj.js, vj.js: flashScreen/flashSendBoxをbodyのみのクラス付替に簡素化（querySelectorAll廃止）、renderPlaylist()を差分更新方式に変更（トラック数不変時はDOM再構築をスキップしクラス・スタイルのみ更新）。
+2026/08/18 18:24:03: フォントをShippori AntiqueからBIZ UDPGothic + Nunitoのセットに変更（デザイン統一）。Google FontsリンクとCSS font-family変数を更新。全HTMLファイル（dj.html, dj-register.html, vj.html, dj-manual.html, vj-manual.html）およびassets/css/style.cssに適用。動作確認済み。
 2026/08/16 08:16:00: dj-manual.htmlとvj-manual.htmlを実プレイリストのAndroid Compact実画面に合わせて更新し、DJ/VJ操作・VIBES!・READY・複数DJ・未読通知・セッション管理の説明と図版を現行仕様へ統一。pics内のマニュアル図版をtest-results/screenshots/real_playlists/playlist_1/android_compactから切り出した実画面画像へ更新。
 日時（2026/08/15 20:50:00）: ビジュアルスクリーンショット撮影前にフラッシュ用クラスの解除を待機する共通ヘルパーを追加し、フラッシュ動作中の画面が撮影されないよう修正 (tests/visual_screenshots.spec.js)
 日時（2026/08/15 20:39:00）: 3つの実プレイリストを用いた1VJ対3DJのAPI統合テストおよびE2Eテストを追加。複数セッションの独立SEND、VJ側のセッション追加・削除、未読通知、DJ/VJのリロード・ブラウザ閉鎖後の再入場とSEND継続を検証対象へ追加 (tests/02_api_integration.spec.js, tests/05_e2e_multi_dj.spec.js, tests/run_all_tests.sh, docs/PDVH.md)
@@ -17,8 +21,8 @@
 日時（2026/08/12 02:33:00）: [VJ READY]バッジの白文字黒角丸背景スタイル定義、バッジ並び時の改行防止flexレイアウト修正、VIBES!モーダルアニメーション同期・送信テスト、複数DJ接続VJロビーおよび非アクティブDJ未読SEND通知の外観テストを追加 (assets/css/style.css, tests/visual_screenshots.spec.js)
 日時（2026/08/12 02:17:50）: DJ初回アクセス時（未SEND状態）の「VJにSENDする曲」の初期表示およびSENDターゲットをプレイリスト1曲目に設定 (assets/js/dj.js)
 日時（2026/08/12 01:38:50）: SENDボタンの5秒カウントダウンを撤去し即時更新化、DJのVJ検索タブ・VIBES!モーダルの外観テスト追加、VJ検索ボタン2x2固定化、プレイリスト縦スクロール枠内収容・下40%高さ確保・大画面向けフォント自動拡大に対応 (dj.html, dj.js, style.css, tests/visual_screenshots.spec.js)
-2026/08/11 23:09:00: DJ画面の「SEND TO VJ」ボタンと「VIBES!」ボタンの高さをVIBES!ボタン側に揃える（高さ縮小およびstretch設定）
-2026/08/11 23:05:00: 外観テストで判明した画面崩れの修正 (CSS構文エラー修正、app-pageコンテナのflexレイアウト修正)
+日時（2026/08/11 23:09:00）: DJ画面の「SEND TO VJ」ボタンと「VIBES!」ボタンの高さをVIBES!ボタン側に揃える（高さ縮小およびstretch設定）
+日時（2026/08/11 23:05:00）: 外観テストで判明した画面崩れの修正 (CSS構文エラー修正、app-pageコンテナのflexレイアウト修正)
 日時（2026/08/11 22:36:54）: 実プレイリスト外観テスト結果の閲覧用ギャラリー index.html および README.md カタログファイルを再生成・配置 (test-results/screenshots/index.html, test-results/screenshots/README.md)
 日時（2026/08/11 21:16:48）: 実プレイリスト3種(10曲/20曲/36曲)を用いた全7端末(PC・iPhone3世代・Android3パターン)×画面フェーズでの自動操作・要素収まりアサーション・フルスクリーンショット撮影を実施し全31テスト100%PASSを確認 (tests/visual_screenshots.spec.js, test-results/layout_verification_report.json, test-results/screenshots/)
 日時（2026/08/11 20:29:45）: 7端末×7画面フェーズ(計49パターン)における画面内要素収まり・横スクロールはみ出しゼロ判定アサーションを実施し全件PASSを確認、検証レポート生成 (tests/visual_screenshots.spec.js, test-results/layout_verification_report.json)
@@ -38,33 +42,3 @@
 日時（2026/08/08 02:25:00）: http://localhost:8787 での動的設定取得(config.php)・セキュリティ(env.php直アクセス保護)・画面描画動作の検証テストを実施し、合格を確認。ワークスペースルール(.agents/AGENTS.md, GEMINI.md)にテスト成果物のtest-results/配下保存規則を追加し、テストスクリプト・検証レポートを作成保存 (test-results/test_config_endpoint.js, test-results/test_summary.json, .agents/AGENTS.md, GEMINI.md)
 日時（2026/08/08 02:16:00）: Pusher公開設定（App Key/Cluster）の二重管理解消のため backend/api/config.php を新設し、assets/js/config.js からの動的取得（アプローチ1）を実装。合わせて backend/api/.htaccess のセキュリティルール強化および README.md の環境構築手順を最新化 (config.php, config.js, dj.js, vj.js, .htaccess, README.md)
 日時（2026/08/08 01:49:00）: CHANGE_HISTORY.md の記載内容を時系列順（最新が一番上）に整列・フォーマット統一。また、ワークスペース内の義務（.agents/AGENTS.md, GEMINI.md）としてCHANGE_HISTORY.mdへの追記を必ずファイル先頭に行うルールを定義
-日時（2026/08/07 05:16:00）: PC/スマホ両対応の最適化およびスマホ画面での1画面納まり（100dvhスクロール分離）・文字サイズ/ボタン視認性・タップ操作性向上の実施 (style.css, dj.html, vj.html, index.html)
-日時（2026/08/07 05:01:00）: CHANGE_HISTORY.mdや直近の実装（手入力SEND機能/Vibes!モーダル、UIレイアウト調整など）に合わせて README.md の機能説明・仕様を最新化
-日時（2026/08/07 04:50:00）: DJコントロール画面のプレイリスト表示領域から不要な「最後の曲です」ステータス表示および関連するJavaScript処理 (playlistStatus) を削除 (dj.html, dj.js)
-日時（2026/08/07 04:37:00）: 「+ Vibes!」ボタンのスタイル（2pxネオン枠線、透明背景、ホバー時ベタ塗り、8px角丸、フォントウェイト、Glow効果等）を隣の「SEND TO VJ」ボタン (.btn-send) と色以外完全に同一の共通コンポーネント構造 (.btn .btn-vibes) へ統一 (dj.html, style.css)
-日時（2026/08/07 04:23:00）: Android/スマホブラウザで「Vibes!」ボタンが小さく押せない問題および全体デザインとの差異を解消するため、SENDボタンエリアを横並び2分割構成 (SEND TO VJ: 72%, + Vibes!: 28%) に変更。高さ50pxのタップターゲット確保とサイバーネオンテーマへのスタイル調整を実施 (dj.html, style.css)
-日時（2026/08/07 02:35:00）: DJ画面に縦幅を犠牲にしない「手入力SEND機能（モーダル式）」を追加し、さらにVJ画面側で手入力送信された曲に「[VIBES!]」バッジを表示する仕様を実装。あわせて手入力割込み時もVJ画面の「プレイリスト上の次の曲」に直前の進行予定曲を維持する処理に対応 (dj.html, style.css, dj.js, vj.js, action.php)
-日時（2026/08/04 18:24:00）: index.htmlおよびvj.html内に記載している「操作説明ガイド」の画面イメージ（モック）を、直近のUI修正（不要なステータス表示の削除、検索ボタン群のレイアウト変更、項目名の変更、表示順の入れ替えなど）に合わせて最新の状態に更新
-日時（2026/08/04 02:23:00）: README.md を最新仕様（VJロビー機能の追加、複数DJのタブ管理、DJ画面での素材検索、タップコピー機能の拡張、横スクロール等のUI改善など直近の変更点）に合わせて更新
-日時（2026/08/04 02:03:00）: vj.jsを修正し、自動ログインの処理速度によってはVJ画面ヘッダーの「ロビーコード」表示処理がスキップされて見えなくなってしまう非同期処理のバグを修正
-日時（2026/08/04 01:56:00）: ユーザーの要望に基づき、DJ/VJ両ページのプレイリスト表示領域における自動往復スクロール（marquee）を撤回。代わりにCSS (overflow-x: auto) を用いて、テキストの折り返しは防ぎつつ、はみ出た部分はユーザーが手動で横にスクロールできる仕様に変更
-日時（2026/08/04 01:52:00）: style.css, dj.js, vj.jsを修正し、DJコントロールページおよびVJページのプレイリスト表示領域において、曲名やアーティスト名が「...」で省略されず、自動的に左右往復スクロール（marquee）で全文表示されるように変更（※後に一部撤回し手動スクロール化）
-日時（2026/08/04 01:50:00）: dj.htmlの「VJ検索」タブ内にある各種検索ボタン（Google, YouTube等）のテキスト折り返しやフォントサイズを、vj.htmlと完全に同一のスタイルに統一
-日時（2026/08/04 01:48:00）: dj.jsを修正し、VJ検索タブなど初期非表示のタブにおいても、タブ切り替え時にテキストの左右スクロール（marquee）が正常に計算・適用されるよう描画タイミングを最適化
-日時（2026/08/04 01:45:00）: dj.jsを修正し、DJコントロールページの曲名やアーティスト名（「VJに通知した曲」「VJに通知する曲」「DJからSENDされた曲」）が長い場合に「...」で省略されるのをやめ、VJページと同様の左右往復スクロール表示になるよう機能を実装
-日時（2026/08/04 01:42:00）: dj.htmlにおいて、「DJ操作」タブと「VJ検索」タブの最上部にあるステータス表示（SENT to VJ / DJからSENDされた曲）のレイアウト構造とパディングを完全に一致させ、タブ切り替え時のガタつきを解消
-日時（2026/08/04 01:39:00）: dj.htmlのDJ操作タブにおいて、不要なステータス表示の削除で生まれた余白をプレイリストの表示領域に割り当て、あわせてプレイリスト内の文字サイズを拡大して視認性を向上
-日時（2026/08/04 01:35:00）: dj.htmlのDJ操作タブにおいて、「VJに送る曲 (SEND to VJ)」という文言を「VJに通知する曲 (SEND to VJ)」に変更
-日時（2026/08/04 01:33:00）: dj.htmlのDJ操作タブにおいて、「VJに通知した曲 (SENT to VJ)」と「VJに送る曲 (SEND to VJ)」のステータス表示順序を上下入れ替え
-日時（2026/08/04 01:31:00）: dj.htmlのDJ操作タブから、DJ自身にとって不要な「次にかける曲 (Next to Play)」および「プレイリスト上の次の曲 (Next in Playlist)」の表示を削除し、UIと関連するJS処理を最適化
-日時（2026/08/04 01:24:00）: vj.htmlの初期表示画面において、「DJの方はこちら（事前登録へ）」ボタンを「モードを選択してください」の上に移動し、index.htmlへの導線を強調
-日時（2026/08/04 01:20:00）: index.htmlの「事前登録フォームへ進む」ボタンの上に「VJの方はこちらから」ボタンを追加し、縦並びに配置してvj.htmlへの直接導線を設置
-日時（2026/08/04 01:17:00）: style.cssのh1要素から text-transform: uppercase; を削除し、アプリタイトルがすべて大文字に変換される問題を修正
-日時（2026/08/04 01:13:00）: index.htmlおよびstyle.cssを修正し、トップページでの要素内スクロール（コンテナ内のスクロールバー表示など）を撤廃し、ブラウザ画面全体での縦スクロールになるようレイアウトを調整
-日時（2026/08/01 20:33:00）: VJページにおけるLocalStorageを利用したロビーコードとセッション状態の永続化（リロード・ページ遷移からのリカバリ機能）を実装。また、バックエンド(action.php)にAPIログ出力機能および8時間無操作時の自動ファイル削除（ガベージコレクション）機能を追加
-日時（2026/08/01 19:46:00）: VJページのUI最適化、サイバー調カスタムスクロールバー（横・縦）の適用、長いテキストの自動往復スクロール機能（marquee）の追加、各種フォントサイズ・余白の圧縮によるタブ領域の確保を実施
-日時（2026/08/01 15:35:00）: UIレイアウトの微調整、Google WebFont(LINE Seed JP)の適用、およびVJロビーコード保存バグ(Lobby not foundエラー)の修正を実施。また、VJロビー画面へのモック追加や各ボタン位置の最適化を完了
-日時（2026/08/01 00:26:00）: ガイド画面の崩れ（生成画像の巨大表示）を修復。外部画像依存を撤去し、HTML/CSSのコンポーネント（ベクターUIプレビュー）による再現方式へ変更。崩れが解消され解像度フリー化を達成
-日時（2026/07/31 23:56:00）: トップページ (index.html) 前段に画像付き「取扱説明書（ガイド）」を追加。DJ+VJ兼任モードとVJ専任モードの違いを画像・解説付きで明確化、デモ画像 (guide_dj_search.jpg, guide_vj_lobby.jpg) の自動生成・配置を完了
-日時（2026/07/31 23:42:00）: DJページに「VJ検索」タブとタップコピー機能追加、VJロビーシステム (action.php に 3アクション追加、index.html / register.js / vj.html / vj.js に対応処理) 実装、VJマルチセッションタブ管理・自動ログイン・画面コンパクト化 (400px幅) を完了
-日時（2026/07/31 23:41:00）: PDVH機能拡張（DJ+VJ検索タブ、VJロビーシステム、マルチセッション管理、URL共有改善）の実装を開始

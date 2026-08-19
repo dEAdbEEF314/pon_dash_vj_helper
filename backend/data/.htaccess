@@ -1,1 +1,13 @@
-Deny from all
+# backend/data/.htaccess - データディレクトリ保護（Webアクセス完全遮断）
+
+# ディレクトリ一覧表示の無効化
+Options -Indexes
+
+# 全ファイルへの直接HTTPアクセスを完全に遮断（Apache 2.4+ / 2.2 両対応）
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>

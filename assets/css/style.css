@@ -12,7 +12,7 @@
   --success-glow: 0 0 10px rgba(0, 255, 136, 0.5);
   --danger-color: #ff3366;
   --danger-glow: 0 0 10px rgba(255, 51, 102, 0.5);
-  --font-family: "Shippori Antique", sans-serif;
+  --font-family: 'Nunito', 'BIZ UDPGothic', sans-serif;
   --transition-speed: 0.3s;
   --content-max-width: 800px;
   --page-gutter: clamp(12px, 3vw, 20px);
@@ -31,17 +31,28 @@ body {
   background-color: var(--bg-color);
   color: var(--text-primary);
   font-family: var(--font-family);
-  background-image:
-    radial-gradient(circle at 15% 50%, rgba(0, 255, 204, 0.05), transparent 25%),
-    radial-gradient(circle at 85% 30%, rgba(255, 51, 102, 0.05), transparent 25%);
-  background-attachment: fixed;
   min-height: 100dvh;
   overflow-y: auto;
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
   -webkit-font-smoothing: antialiased;
+  position: relative;
 }
+
+/* スクロール時のフルスクリーン再描画（Repaint）を防ぐため、固定背景をGPU合成レイヤーに分離 */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 15% 50%, rgba(0, 255, 204, 0.05), transparent 25%),
+    radial-gradient(circle at 85% 30%, rgba(255, 51, 102, 0.05), transparent 25%);
+  will-change: transform;
+}
+
 
 /* Glassmorphism Container */
 .glass-panel {
@@ -218,7 +229,7 @@ body.app-page h3 {
   border-radius: 6px;
   font-size: 0.85rem;
   font-weight: bold;
-  font-family: monospace;
+  font-family: 'Nunito', 'BIZ UDPGothic', sans-serif;
 }
 
 .lobby-code-badge span {
@@ -549,104 +560,39 @@ input[type="file"] {
   0%,
   100% {
     background-color: #000000;
-    box-shadow: inset 0 0 0px transparent;
   }
 
   25% {
     background-color: #0055ff;
-    box-shadow: inset 0 0 50px rgba(0, 85, 255, 0.8), 0 0 30px rgba(0, 85, 255, 0.5);
   }
 
   50% {
     background-color: #ffffff;
-    box-shadow: inset 0 0 60px rgba(255, 255, 255, 0.9), 0 0 40px rgba(255, 255, 255, 0.7);
   }
 
   75% {
     background-color: #0055ff;
-    box-shadow: inset 0 0 50px rgba(0, 85, 255, 0.8), 0 0 30px rgba(0, 85, 255, 0.5);
   }
 }
 
-@keyframes flashMint {
-  0%,
-  100% {
-    background-color: #000000;
-    box-shadow: inset 0 0 0px transparent;
-  }
-
-  25% {
-    background-color: #0055ff;
-    box-shadow: inset 0 0 50px rgba(0, 85, 255, 0.8), 0 0 30px rgba(0, 85, 255, 0.5);
-  }
-
-  50% {
-    background-color: #ffffff;
-    box-shadow: inset 0 0 60px rgba(255, 255, 255, 0.9), 0 0 40px rgba(255, 255, 255, 0.7);
-  }
-
-  75% {
-    background-color: #0055ff;
-    box-shadow: inset 0 0 50px rgba(0, 85, 255, 0.8), 0 0 30px rgba(0, 85, 255, 0.5);
-  }
-}
-
-@keyframes flashDanger {
-  0%,
-  100% {
-    background-color: #000000;
-    box-shadow: inset 0 0 0px transparent;
-  }
-
-  25% {
-    background-color: #0055ff;
-    box-shadow: inset 0 0 50px rgba(0, 85, 255, 0.8), 0 0 30px rgba(0, 85, 255, 0.5);
-  }
-
-  50% {
-    background-color: #ffffff;
-    box-shadow: inset 0 0 60px rgba(255, 255, 255, 0.9), 0 0 40px rgba(255, 255, 255, 0.7);
-  }
-
-  75% {
-    background-color: #0055ff;
-    box-shadow: inset 0 0 50px rgba(0, 85, 255, 0.8), 0 0 30px rgba(0, 85, 255, 0.5);
-  }
-}
-
-@keyframes flashSuccess {
-  0%,
-  100% {
-    background-color: #000000;
-    box-shadow: inset 0 0 0px transparent;
-  }
-
-  25% {
-    background-color: #0055ff;
-    box-shadow: inset 0 0 50px rgba(0, 85, 255, 0.8), 0 0 30px rgba(0, 85, 255, 0.5);
-  }
-
-  50% {
-    background-color: #ffffff;
-    box-shadow: inset 0 0 60px rgba(255, 255, 255, 0.9), 0 0 40px rgba(255, 255, 255, 0.7);
-  }
-
-  75% {
-    background-color: #0055ff;
-    box-shadow: inset 0 0 50px rgba(0, 85, 255, 0.8), 0 0 30px rgba(0, 85, 255, 0.5);
-  }
-}
-
-.is-flashing-danger,
-.is-flashing-danger #mainApp,
-.is-flashing-danger .container,
-.is-flashing-danger .glass-panel,
-.is-flashing-success,
-.is-flashing-success #mainApp,
-.is-flashing-success .container,
-.is-flashing-success .glass-panel {
+/* フラッシュは body のみにアニメーション適用。子要素は背景を透過させて body の色変化を透かす。
+   全 .glass-panel への個別 animation 適用を廃止し、リペイント負荷を大幅削減。 */
+body.is-flashing-danger,
+body.is-flashing-success {
+  will-change: background-color;
   animation: flashSmooth 1s ease-in-out 3 !important;
 }
+
+body.is-flashing-danger #mainApp,
+body.is-flashing-danger .container,
+body.is-flashing-danger .glass-panel,
+body.is-flashing-success #mainApp,
+body.is-flashing-success .container,
+body.is-flashing-success .glass-panel {
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+}
+
 
 /* Search Results Links (VJ View) */
 .search-links {
@@ -777,7 +723,7 @@ input[type="file"] {
   padding: 15px;
   border-radius: 8px;
   word-break: break-all;
-  font-family: monospace;
+  font-family: 'Nunito', 'BIZ UDPGothic', sans-serif;
   margin-bottom: 10px;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -1159,7 +1105,7 @@ body.app-page .container > header.app-header {
   border-radius: 8px;
   border: 1px solid rgba(0, 255, 204, 0.3);
   margin: 12px 0;
-  font-family: monospace;
+  font-family: 'Nunito', 'BIZ UDPGothic', sans-serif;
 }
 
 .modal-overlay {
@@ -1800,7 +1746,7 @@ body.app-page .container > header.app-header {
   border-bottom-width: 2px;
   border-radius: 5px;
   background: rgba(0, 0, 0, 0.4);
-  font-family: monospace;
+  font-family: 'Nunito', 'BIZ UDPGothic', sans-serif;
   font-weight: 700;
 }
 
@@ -1906,4 +1852,22 @@ body.app-page .container > header.app-header {
     grid-template-columns: 1fr;
   }
 }
+
+/* 視覚効果削減・省電力設定の端末向け最適化 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .is-marquee {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
 

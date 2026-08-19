@@ -1,0 +1,42 @@
+; ==============================================================================
+; Pon Dash VJ Helper - さくらのレンタルサーバ（ライトプラン含む）推奨 php.ini 設定
+; ==============================================================================
+; 【設定手順】
+; 1. さくらのサーバコントロールパネルにログイン
+; 2. [スクリプト設定] > [php.ini設定] を開く
+; 3. 以下の内容を貼り付けて [保存する] をクリック
+; ==============================================================================
+
+; --- 1. OPcache 高速化設定 (PHPスクリプトのバイトコードキャッシュ) ---
+; PHPのコンパイル結果をメモリにキャッシュし、リクエスト処理を大幅に高速化します。
+opcache.enable = 1
+opcache.enable_cli = 1
+opcache.memory_consumption = 128
+opcache.interned_strings_buffer = 16
+opcache.max_accelerated_files = 4000
+opcache.revalidate_freq = 60
+opcache.fast_shutdown = 1
+
+; --- 2. zlib 出力自動圧縮 (GZIP圧縮フォールバック) ---
+; WAF等の影響でApacheのmod_deflateが無効な場合でも、PHPのJSON/HTML出力を自動圧縮します。
+zlib.output_compression = On
+zlib.output_compression_level = 6
+
+; --- 3. メモリ・実行時間・リクエストサイズ設定 ---
+memory_limit = 128M
+max_execution_time = 30
+max_input_time = 60
+post_max_size = 8M
+upload_max_filesize = 8M
+
+; --- 4. セキュリティ & エラーハンドリング ---
+display_errors = Off
+display_startup_errors = Off
+log_errors = On
+error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT
+expose_php = Off
+
+; --- 5. 文字コード & タイムゾーン ---
+date.timezone = "Asia/Tokyo"
+default_charset = "UTF-8"
+mbstring.language = "Japanese"

@@ -90,8 +90,10 @@ const LOBBY_CREATE_RATE_LIMIT = 10;
 // 8時間（28800秒）無操作でファイル自体を物理削除(Garbage Collection)するよう変更
 
 // ==========================================
-// APIログ出力ヘルパー
+// APIログ出力ヘルパー（ログローテーション対応）
 // ==========================================
+const MAX_LOG_SIZE = 524288; // 512KB
+
 function apiLog($actionName, $message) {
     $logFile = DATA_DIR . 'api.log';
     $ip = $_SERVER['REMOTE_ADDR'] ?? 'Unknown';
@@ -100,14 +102,25 @@ function apiLog($actionName, $message) {
     $safeMessage = preg_replace('/[\r\n]+/', ' ', (string)$message);
     $safeMessage = preg_replace('/(password|token|secret|inviteToken)\s*[:=].*/i', '$1=[redacted]', $safeMessage);
     $logMsg = "[{$timestamp}] [IP: {$ip}] Action: {$safeAction} - {$safeMessage}\n";
+
+    // ログサイズ上限チェック（512KBを超えたら .old にローテーション）
+    if (@file_exists($logFile) && @filesize($logFile) > MAX_LOG_SIZE) {
+        @rename($logFile, DATA_DIR . 'api.log.old');
+    }
+
     file_put_contents($logFile, $logMsg, FILE_APPEND | LOCK_EX);
 }
 
-function sendErrorAndExit($errorMsg, $actionName = '') {
+function sendErrorAndExit($errorMsg, $actionName = '', $status = 400, $errorCode = 'REQUEST_ERROR') {
     global $action;
     $act = $actionName ?: ($action ?? 'unknown');
     apiLog($act, "Error: " . $errorMsg);
-    echo json_encode(['success' => false, 'error' => $errorMsg]);
+    http_response_code($status);
+    echo json_encode([
+        'success' => false,
+        'errorCode' => $errorCode,
+        'error' => $errorMsg
+    ]);
     exit;
 }
 
@@ -142,7 +155,15 @@ function enforceLobbyRateLimit($actionName, $limit) {
 }
 
 function removeSessionFromLobbies($sessionId) {
+    $now = time();
     foreach (glob(DATA_DIR . 'lobby_*.json') ?: [] as $lobbyFile) {
+        // 期限切れのロビーファイルはスキップ（GCに任せる）
+        $mtime = @filemtime($lobbyFile);
+        if ($mtime !== false && ($now - $mtime) > SESSION_LIFETIME) {
+            @unlink($lobbyFile);
+            continue;
+        }
+
         $lobbyFp = fopen($lobbyFile, 'r+');
         if (!$lobbyFp || !flock($lobbyFp, LOCK_EX)) {
             if ($lobbyFp) fclose($lobbyFp);
@@ -152,14 +173,18 @@ function removeSessionFromLobbies($sessionId) {
         $size = filesize($lobbyFile);
         $lobbyData = json_decode(fread($lobbyFp, $size > 0 ? $size : 1024), true);
         if (is_array($lobbyData) && is_array($lobbyData['sessions'] ?? null)) {
+            $originalCount = count($lobbyData['sessions']);
             $lobbyData['sessions'] = array_values(array_filter(
                 $lobbyData['sessions'],
                 static fn($item) => ($item['sessionId'] ?? '') !== $sessionId
             ));
-            ftruncate($lobbyFp, 0);
-            rewind($lobbyFp);
-            fwrite($lobbyFp, json_encode($lobbyData));
-            fflush($lobbyFp);
+            // セッションが実際に含まれていた場合のみ書き戻し
+            if (count($lobbyData['sessions']) < $originalCount) {
+                ftruncate($lobbyFp, 0);
+                rewind($lobbyFp);
+                fwrite($lobbyFp, json_encode($lobbyData));
+                fflush($lobbyFp);
+            }
         }
         flock($lobbyFp, LOCK_UN);
         fclose($lobbyFp);
@@ -167,13 +192,24 @@ function removeSessionFromLobbies($sessionId) {
 }
 
 function garbageCollectExpiredData() {
+    // 確率的実行: 1/50 (2%) のリクエストでのみGCを実行し、通常リクエストの遅延を防ぐ。
+    // 各セッションの有効期限チェックはリクエスト個別に filemtime で行われるため安全。
+    if (random_int(1, 50) !== 1) {
+        return;
+    }
     $now = time();
     foreach (glob(DATA_DIR . '*.json') ?: [] as $dataFile) {
-        $data = json_decode((string)file_get_contents($dataFile), true);
-        $createdAt = is_array($data) ? ($data['created_at'] ?? 0) : 0;
-        $age = $createdAt > 0 ? $now - $createdAt : $now - (int)filemtime($dataFile);
-        if ($age > SESSION_LIFETIME) {
+        // filemtime ベースの軽量判定: ファイル内容の読み込み・JSON解析を行わない
+        $mtime = @filemtime($dataFile);
+        if ($mtime !== false && ($now - $mtime) > SESSION_LIFETIME) {
             @unlink($dataFile);
+        }
+    }
+    // 古いレートリミット一時ファイル (.rate_*.json) もクリーンアップ (ウィンドウ時間を超過したもの)
+    foreach (glob(DATA_DIR . '.rate_*.json') ?: [] as $rateFile) {
+        $mtime = @filemtime($rateFile);
+        if ($mtime !== false && ($now - $mtime) > (LOBBY_RATE_WINDOW * 2)) {
+            @unlink($rateFile);
         }
     }
 }
@@ -324,7 +360,18 @@ if ($action === 'push_to_lobby') {
         'djName' => $djName !== '' ? $djName : 'DJ',
         'addedAt' => time()
     ];
-    
+
+    $replacedItem = null;
+    $lobbyData['sessions'] = array_values(array_filter(
+        $lobbyData['sessions'] ?? [],
+        static function ($item) use ($sessionId, &$replacedItem) {
+            if (($item['sessionId'] ?? '') === $sessionId) {
+                $replacedItem = $item;
+                return false;
+            }
+            return true;
+        }
+    ));
     $lobbyData['sessions'][] = $newItem;
     
     ftruncate($fp, 0);
@@ -334,10 +381,12 @@ if ($action === 'push_to_lobby') {
     fclose($fp);
     
     if ($PUSHER_APP_ID !== 'YOUR_PUSHER_APP_ID') {
-        sendPusherEvent($PUSHER_APP_ID, $PUSHER_KEY, $PUSHER_SECRET, $PUSHER_CLUSTER, "lobby-{$lobbyCode}", 'session-pushed', [
-            'action' => 'session-pushed',
+        $lobbyEvent = $replacedItem !== null ? 'session-replaced' : 'session-pushed';
+        sendPusherEvent($PUSHER_APP_ID, $PUSHER_KEY, $PUSHER_SECRET, $PUSHER_CLUSTER, "lobby-{$lobbyCode}", $lobbyEvent, [
+            'action' => $lobbyEvent,
             'sessionId' => $sessionId,
             'inviteToken' => $inviteToken,
+            'inviteTokenHash' => hash('sha256', $inviteToken),
             'djName' => $newItem['djName']
         ]);
     }
@@ -349,26 +398,65 @@ if ($action === 'push_to_lobby') {
 if ($action === 'poll_lobby') {
     $lobbyCodeInput = $input['lobbyCode'] ?? '';
     if (!is_string($lobbyCodeInput)) {
-        sendErrorAndExit('Invalid lobby code');
+        sendErrorAndExit('Invalid lobby code', $action, 400, 'INVALID_INPUT');
     }
     $lobbyCode = strtoupper(trim($lobbyCodeInput));
     if (!preg_match('/^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{10}$/', $lobbyCode)) {
-        sendErrorAndExit('Invalid lobby code');
+        sendErrorAndExit('Invalid lobby code', $action, 400, 'INVALID_INPUT');
+    }
+    $knownSessionIds = $input['knownSessionIds'] ?? [];
+    $knownTokenHashes = $input['knownTokenHashes'] ?? [];
+    if (!is_array($knownSessionIds) || !is_array($knownTokenHashes)) {
+        sendErrorAndExit('Invalid known session data', $action, 400, 'INVALID_INPUT');
+    }
+    foreach ($knownSessionIds as $knownSid) {
+        if (!is_string($knownSid) || !preg_match('/^[a-f0-9]{32}$/', $knownSid)) {
+            sendErrorAndExit('Invalid known session ID', $action, 400, 'INVALID_INPUT');
+        }
+    }
+    foreach ($knownTokenHashes as $knownSid => $knownHash) {
+        if (!is_string($knownSid) || !preg_match('/^[a-f0-9]{32}$/', $knownSid)
+            || !is_string($knownHash) || !preg_match('/^[a-f0-9]{64}$/', $knownHash)) {
+            sendErrorAndExit('Invalid known token hash', $action, 400, 'INVALID_INPUT');
+        }
     }
     $lobbyFile = DATA_DIR . 'lobby_' . $lobbyCode . '.json';
-    
     if (!file_exists($lobbyFile)) {
-        sendErrorAndExit('Lobby not found');
+        sendErrorAndExit('Lobby not found', $action, 404, 'LOBBY_NOT_FOUND');
     }
-    
     if (filemtime($lobbyFile) < time() - SESSION_LIFETIME) {
         unlink($lobbyFile);
-        apiLog($action, "Garbage collected expired lobby file: {$lobbyCode}");
-        sendErrorAndExit('Lobby expired and deleted');
+        sendErrorAndExit('Lobby expired and deleted', $action, 404, 'LOBBY_EXPIRED');
     }
-    
     $lobbyData = json_decode(file_get_contents($lobbyFile), true);
-    echo json_encode(['success' => true, 'sessions' => $lobbyData['sessions'] ?? []]);
+    if (!is_array($lobbyData)) {
+        sendErrorAndExit('Invalid lobby data', $action, 500, 'INVALID_LOBBY_DATA');
+    }
+    $added = [];
+    $currentIds = [];
+    foreach (($lobbyData['sessions'] ?? []) as $item) {
+        $sid = $item['sessionId'] ?? '';
+        $currentIds[] = $sid;
+        $token = $item['inviteToken'] ?? '';
+        $hash = hash('sha256', $token);
+        $isKnown = in_array($sid, $knownSessionIds, true)
+            && (($knownTokenHashes[$sid] ?? '') === $hash);
+        if (!$isKnown) {
+            $added[] = [
+                'sessionId' => $sid,
+                'inviteToken' => $token,
+                'inviteTokenHash' => $hash,
+                'djName' => $item['djName'] ?? 'DJ',
+                'isNew' => !in_array($sid, $knownSessionIds, true)
+            ];
+        }
+    }
+    $removed = array_values(array_diff($knownSessionIds, $currentIds));
+    echo json_encode([
+        'success' => true,
+        'added' => $added,
+        'removedSessionIds' => $removed
+    ]);
     exit;
 }
 
@@ -398,6 +486,19 @@ if (!$fp || !flock($fp, LOCK_EX)) {
 
 $filesize = filesize($sessionFile);
 $sessionData = json_decode(fread($fp, $filesize > 0 ? $filesize : 1024), true);
+
+if (!is_array($sessionData)) {
+    flock($fp, LOCK_UN);
+    fclose($fp);
+    sendErrorAndExit('Invalid session data', $action, 500, 'INVALID_SESSION_DATA');
+}
+if (!array_key_exists('stateVersion', $sessionData)) {
+    $sessionData['stateVersion'] = 0;
+    ftruncate($fp, 0);
+    rewind($fp);
+    fwrite($fp, json_encode($sessionData));
+    fflush($fp);
+}
 
 $createdAt = $sessionData['created_at'] ?? 0;
 if (time() - $createdAt > SESSION_LIFETIME) {
@@ -451,7 +552,8 @@ if ($action === 'login') {
             'tracks' => $sessionData['tracks'],
             'nowPlayingIdx' => $sessionData['nowPlayingIdx'],
             'sentIdx' => $sessionData['sentIdx'],
-            'customTrack' => $sessionData['customTrack'] ?? null
+            'customTrack' => $sessionData['customTrack'] ?? null,
+            'stateVersion' => (int)$sessionData['stateVersion']
         ];
         
         ftruncate($fp, 0);
@@ -491,6 +593,20 @@ if (!is_string($token) || $tokenHash === '' || strlen($token) > 200 || !password
     sendErrorAndExit('Unauthorized');
 }
 
+if ($action === 'sync') {
+    $stateForClient = [
+        'tracks' => $sessionData['tracks'],
+        'nowPlayingIdx' => $sessionData['nowPlayingIdx'],
+        'sentIdx' => $sessionData['sentIdx'],
+        'customTrack' => $sessionData['customTrack'] ?? null,
+        'stateVersion' => (int)$sessionData['stateVersion']
+    ];
+    flock($fp, LOCK_UN);
+    fclose($fp);
+    echo json_encode(['success' => true, 'state' => $stateForClient]);
+    exit;
+}
+
 if ($action === 'delete_session') {
     flock($fp, LOCK_UN);
     fclose($fp);
@@ -512,6 +628,7 @@ if ($action === 'delete_session') {
 // アクション処理
 // ========================================
 $eventPayload = null;
+$previousSessionData = $sessionData;
 
 if ($action === 'send' && $role === 'dj') {
     $sendIdx = filter_var($input['sendIdx'] ?? null, FILTER_VALIDATE_INT, ['options' => ['default' => -1]]);
@@ -537,26 +654,39 @@ if ($action === 'send' && $role === 'dj') {
     } elseif ($sendIdx >= 0 && $sendIdx < count($sessionData['tracks'])) {
         unset($sessionData['customTrack']);
         $sessionData['sentIdx'] = $sendIdx;
-        $eventPayload = ['action' => 'send', 'sentIdx' => $sendIdx];
+        $sessionData['nowPlayingIdx'] = $sendIdx;
+        $eventPayload = [
+            'action' => 'send',
+            'sentIdx' => $sendIdx,
+            'nowPlayingIdx' => $sendIdx,
+            'customTrack' => null
+        ];
     } else {
         flock($fp, LOCK_UN);
         fclose($fp);
         sendErrorAndExit('Invalid send parameters');
     }
 } 
-elseif ($action === 'autonext' && $role === 'dj') {
-    $nowPlayingIdx = filter_var($input['nowPlayingIdx'] ?? null, FILTER_VALIDATE_INT, ['options' => ['default' => -1]]);
-    if ($nowPlayingIdx >= 0 && $nowPlayingIdx < count($sessionData['tracks'])) {
-        $sessionData['nowPlayingIdx'] = $nowPlayingIdx;
-        $eventPayload = ['action' => 'auto-next', 'nowPlayingIdx' => $nowPlayingIdx];
-    } else {
+elseif ($action === 'ready' && $role === 'vj') {
+    $readyForVersion = filter_var($input['readyForVersion'] ?? null, FILTER_VALIDATE_INT, ['options' => ['default' => -1]]);
+    if ($readyForVersion !== (int)$sessionData['stateVersion']) {
         flock($fp, LOCK_UN);
         fclose($fp);
-        sendErrorAndExit('Invalid now playing index');
+        sendErrorAndExit('READY version does not match current state', $action, 409, 'READY_VERSION_MISMATCH');
     }
-}
-elseif ($action === 'ready' && $role === 'vj') {
-    $eventPayload = ['action' => 'vj-ready'];
+    $readyFile = DATA_DIR . $sessionId . '.ready.json';
+    $readyData = is_file($readyFile) ? json_decode((string)file_get_contents($readyFile), true) : null;
+    if (is_array($readyData) && ($readyData['stateVersion'] ?? -1) === $readyForVersion) {
+        flock($fp, LOCK_UN);
+        fclose($fp);
+        sendErrorAndExit('READY already sent for this version', $action, 409, 'READY_DUPLICATE');
+    }
+    file_put_contents($readyFile, json_encode(['stateVersion' => $readyForVersion, 'created_at' => $sessionData['created_at']]), LOCK_EX);
+    $eventPayload = [
+        'action' => 'vj-ready',
+        'stateVersion' => (int)$sessionData['stateVersion'],
+        'readyForVersion' => $readyForVersion
+    ];
 }
 else {
     flock($fp, LOCK_UN);
@@ -565,20 +695,73 @@ else {
 }
 
 // データの保存（変更があった場合）
-if (in_array($action, ['send', 'autonext'])) {
+if ($action === 'send') {
+    $sessionData['stateVersion'] = (int)$sessionData['stateVersion'] + 1;
+    $eventPayload['stateVersion'] = (int)$sessionData['stateVersion'];
     ftruncate($fp, 0);
     rewind($fp);
     fwrite($fp, json_encode($sessionData));
+    fflush($fp);
+}
+
+$eventNeedsPusher = is_array($eventPayload)
+    && $PUSHER_APP_ID !== 'YOUR_PUSHER_APP_ID';
+$pusherResponse = true;
+if ($eventNeedsPusher) {
+    $pusherResponse = sendPusherEvent(
+        $PUSHER_APP_ID,
+        $PUSHER_KEY,
+        $PUSHER_SECRET,
+        $PUSHER_CLUSTER,
+        "session-{$sessionId}",
+        'state-updated',
+        $eventPayload
+    );
+}
+
+if ($pusherResponse === false) {
+    ftruncate($fp, 0);
+    rewind($fp);
+    fwrite($fp, json_encode($previousSessionData));
+    fflush($fp);
+    flock($fp, LOCK_UN);
+    fclose($fp);
+
+    $rollbackPayload = [
+        'action' => 'rollback',
+        'stateVersion' => (int)$previousSessionData['stateVersion'],
+        'sentIdx' => (int)$previousSessionData['sentIdx'],
+        'nowPlayingIdx' => (int)$previousSessionData['nowPlayingIdx'],
+        'customTrack' => $previousSessionData['customTrack'] ?? null
+    ];
+    if ($eventNeedsPusher) {
+        sendPusherEvent(
+            $PUSHER_APP_ID,
+            $PUSHER_KEY,
+            $PUSHER_SECRET,
+            $PUSHER_CLUSTER,
+            "session-{$sessionId}",
+            'state-updated',
+            $rollbackPayload
+        );
+    }
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'errorCode' => 'PUSHER_DELIVERY_FAILED',
+        'error' => 'Pusher delivery failed'
+    ]);
+    exit;
 }
 
 flock($fp, LOCK_UN);
 fclose($fp);
 
-if ($eventPayload && $PUSHER_APP_ID !== 'YOUR_PUSHER_APP_ID') {
-    sendPusherEvent($PUSHER_APP_ID, $PUSHER_KEY, $PUSHER_SECRET, $PUSHER_CLUSTER, "session-{$sessionId}", 'state-updated', $eventPayload);
+$response = ['success' => true];
+if (is_array($eventPayload)) {
+    $response += $eventPayload;
 }
-
-echo json_encode(['success' => true]);
+echo json_encode($response);
 
 
 /**
@@ -621,11 +804,14 @@ function sendPusherEvent($appId, $key, $secret, $cluster, $channel, $event, $dat
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, $isLocalhost ? 0 : 2);
         
         $response = curl_exec($ch);
-        if(curl_errno($ch)) {
+        $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        if (curl_errno($ch)) {
             apiLog('Pusher', 'curl error: ' . curl_error($ch));
+            curl_close($ch);
+            return false;
         }
         curl_close($ch);
-        return $response;
+        return ($httpCode >= 200 && $httpCode < 300) ? $response : false;
     } else {
         $options = [
             'http' => [
@@ -647,6 +833,7 @@ function sendPusherEvent($appId, $key, $secret, $cluster, $channel, $event, $dat
         if ($response === false) {
             $error = error_get_last();
             apiLog('Pusher', 'file_get_contents error: ' . ($error['message'] ?? 'Unknown error'));
+            return false;
         }
         return $response;
     }

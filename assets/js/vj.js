@@ -50,6 +50,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // セッション Map<sessionId, SessionObject>
     const sessions = new Map();
     const processingSessionIds = new Set();
+    const lobbyKnownTokens = new Map();
     let activeSessionId = null;
 
     // --- LocalStorage ヘルパー ---
@@ -245,19 +246,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function resumeLobby(code) {
         try {
-            const data = await apiRequest('action.php?action=poll_lobby', {
-                method: 'POST',
-                body: JSON.stringify({ lobbyCode: code })
-            });
-            if (data.success) {
-                setupLobbySubscription(code);
-                if (Array.isArray(data.sessions)) {
-                    await Promise.all(data.sessions.map(s => handlePushedSession(s.sessionId, s.inviteToken, s.djName)));
-                }
-            } else {
-                // 期限切れや削除済みの場合はローカルストレージもクリア
-                clearLobbyCode();
-            }
+            await pollLobbySessions(code, true);
+            if (currentLobbyCode) setupLobbySubscription(code);
         } catch (e) {
             console.error("ロビー復元通信エラー", e);
         }
@@ -271,8 +261,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         const lobbyChannel = pusher.subscribe(`lobby-${code}`);
         lobbyChannel.bind('session-pushed', (eventData) => {
             if (eventData.sessionId && eventData.inviteToken) {
-                handlePushedSession(eventData.sessionId, eventData.inviteToken, eventData.djName);
+                lobbyKnownTokens.set(
+                    eventData.sessionId,
+                    eventData.inviteTokenHash || ''
+                );
+                handlePushedSession(
+                    eventData.sessionId,
+                    eventData.inviteToken,
+                    eventData.djName
+                );
             }
+        });
+        lobbyChannel.bind('session-replaced', (eventData) => {
+            if (!eventData.sessionId || !eventData.inviteToken) return;
+            lobbyKnownTokens.set(
+                eventData.sessionId,
+                eventData.inviteTokenHash || ''
+            );
+            reauthenticateReplacedSession(eventData);
+        });
+        lobbyChannel.bind('session-removed', (eventData) => {
+            if (!eventData.sessionId) return;
+            lobbyKnownTokens.delete(eventData.sessionId);
+            removeSessionLocally(eventData.sessionId);
         });
 
         if (lobbyPollInterval) clearInterval(lobbyPollInterval);
@@ -281,23 +292,43 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, 30000);
     }
 
-    async function pollLobbySessions(code) {
+    async function pollLobbySessions(code, isInitial = false) {
         if (!code) return;
         try {
+            const knownSessionIds = Array.from(lobbyKnownTokens.keys());
+            const knownTokenHashes = Object.fromEntries(lobbyKnownTokens);
             const data = await apiRequest('action.php?action=poll_lobby', {
                 method: 'POST',
-                body: JSON.stringify({ lobbyCode: code })
+                body: JSON.stringify({
+                    lobbyCode: code,
+                    knownSessionIds,
+                    knownTokenHashes
+                })
             });
-            if (data.success && Array.isArray(data.sessions)) {
-                await Promise.all(data.sessions.map(s => handlePushedSession(s.sessionId, s.inviteToken, s.djName)));
-            } else if (
-                !data.success
-                && ['expired', 'not found', 'deleted'].some(term => (data.error || '').includes(term))
-            ) {
+            if (!data.success) return;
+
+            const added = Array.isArray(data.added) ? data.added : [];
+            const removed = Array.isArray(data.removedSessionIds)
+                ? data.removedSessionIds
+                : [];
+            await Promise.all(added.map(s => {
+                lobbyKnownTokens.set(s.sessionId, s.inviteTokenHash || '');
+                return handlePushedSession(s.sessionId, s.inviteToken, s.djName);
+            }));
+
+            removed.forEach((sid) => {
+                lobbyKnownTokens.delete(sid);
+                if (sessions.has(sid)) removeSessionLocally(sid);
+            });
+
+            if (isInitial && added.length === 0 && removed.length === 0) {
+                renderLobbySessions();
+            }
+        } catch (e) {
+            if (e.status === 404 || /expired|not found|deleted/i.test(e.message)) {
                 clearLobbyCode();
                 if (lobbyPollInterval) clearInterval(lobbyPollInterval);
             }
-        } catch (e) {
             console.error("ロビーポーリングエラー", e);
         }
     }
@@ -331,6 +362,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // BUG FIX: Pusher通知とポーリングの同時到着による同一セッションの二重ログインを防止する。
+    async function reauthenticateReplacedSession(eventData) {
+        const sessionId = eventData.sessionId;
+        const current = sessions.get(sessionId);
+        if (!current) {
+            await handlePushedSession(
+                sessionId,
+                eventData.inviteToken,
+                eventData.djName
+            );
+            return;
+        }
+        try {
+            const data = await apiRequest('action.php?action=login&role=vj', {
+                method: 'POST',
+                body: JSON.stringify({ sessionId, inviteToken: eventData.inviteToken })
+            });
+            if (!data.success) throw new Error(data.error || '再認証に失敗しました');
+            current.token = data.token;
+            current.state.tracks = data.state.tracks;
+            current.state.nowPlayingIdx = data.state.nowPlayingIdx;
+            current.state.sentIdx = data.state.sentIdx;
+            current.state.customTrack = data.state.customTrack || null;
+            current.state.stateVersion = Number.isInteger(data.state.stateVersion)
+                ? data.state.stateVersion
+                : 0;
+            current.state.vjReady = false;
+            current.state.readyForVersion = null;
+            if (activeSessionId === sessionId) {
+                renderPlaylist();
+                updateDisplay();
+            }
+        } catch (error) {
+            console.warn('置換セッションの再認証に失敗しました', error);
+            removeSessionLocally(sessionId);
+        }
+    }
+
     async function handlePushedSession(sessionId, inviteToken, djName) {
         if (!sessionId || !inviteToken || sessions.has(sessionId) || processingSessionIds.has(sessionId)) return;
 
@@ -422,7 +490,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 nowPlayingIdx: loginData.state.nowPlayingIdx,
                 sentIdx: loginData.state.sentIdx,
                 customTrack: loginData.state.customTrack || null,
-                vjReady: false
+                stateVersion: Number.isInteger(loginData.state.stateVersion)
+                    ? loginData.state.stateVersion
+                    : 0,
+                vjReady: false,
+                readyForVersion: null
             },
             hasUnread: false
         };
@@ -432,31 +504,58 @@ document.addEventListener('DOMContentLoaded', async () => {
         sessionObj.channel = channel;
 
         channel.bind('state-updated', (data) => {
-            if (data.action === 'send') {
+            if (!data || !Number.isInteger(data.stateVersion)) return;
+            const currentVersion = sessionObj.state.stateVersion;
+
+            if (data.action === 'rollback') {
                 sessionObj.state.sentIdx = data.sentIdx;
-                sessionObj.state.customTrack = data.customTrack || null;
-                sessionObj.state.vjReady = false;
-                if (activeSessionId === sessionId) {
-                    renderPlaylist();
-                    updateDisplay();
-                    flashSendBox('is-flashing-danger');
-                } else {
-                    sessionObj.hasUnread = true;
-                    renderSessionTabs();
-                }
-            } else if (data.action === 'auto-next') {
                 sessionObj.state.nowPlayingIdx = data.nowPlayingIdx;
+                sessionObj.state.customTrack = data.customTrack || null;
+                sessionObj.state.stateVersion = data.stateVersion;
                 sessionObj.state.vjReady = false;
-                if (activeSessionId === sessionId) {
-                    renderPlaylist();
-                    updateDisplay();
-                }
+                sessionObj.state.readyForVersion = null;
             } else if (data.action === 'vj-ready') {
+                if (data.stateVersion !== currentVersion
+                    || data.readyForVersion !== currentVersion
+                    || sessionObj.state.readyForVersion === data.readyForVersion) {
+                    return;
+                }
                 sessionObj.state.vjReady = true;
+                sessionObj.state.readyForVersion = data.readyForVersion;
                 if (activeSessionId === sessionId) {
                     updateDisplay();
                     flashSendBox('is-flashing-success');
                 }
+                return;
+            } else {
+                if (data.stateVersion <= currentVersion) return;
+                if (data.stateVersion !== currentVersion + 1) {
+                    syncVjSession(sessionObj);
+                    return;
+                }
+                if (data.action === 'send') {
+                    sessionObj.state.sentIdx = data.sentIdx;
+                    if (Object.prototype.hasOwnProperty.call(data, 'nowPlayingIdx')) {
+                        sessionObj.state.nowPlayingIdx = data.nowPlayingIdx;
+                    }
+                    sessionObj.state.customTrack = data.customTrack || null;
+                } else if (data.action === 'auto-next') {
+                    sessionObj.state.nowPlayingIdx = data.nowPlayingIdx;
+                } else {
+                    return;
+                }
+                sessionObj.state.stateVersion = data.stateVersion;
+                sessionObj.state.vjReady = false;
+                sessionObj.state.readyForVersion = null;
+            }
+
+            if (activeSessionId === sessionId) {
+                renderPlaylist();
+                updateDisplay();
+                if (data.action === 'send') flashSendBox('is-flashing-danger');
+            } else {
+                sessionObj.hasUnread = true;
+                renderSessionTabs();
             }
         });
         channel.bind('session-removed', () => {
@@ -533,62 +632,97 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ----------------------------------------------------
     // 6. UI描画 (セッションタブ, プレイリスト, ステータス)
     // ----------------------------------------------------
-    function renderSessionTabs() {
-        sessionTabBar.innerHTML = '';
-        
-        sessions.forEach((sess, sid) => {
-            const tab = document.createElement('div');
-            tab.className = `session-tab ${sid === activeSessionId ? 'active' : ''}`;
+    // セッションタブ描画（差分更新対応）
+    let lastRenderedSessionKeys = '';
 
-            const label = document.createElement('span');
-            label.textContent = `🎧 ${sess.djName || 'DJ'}`;
-            tab.appendChild(label);
-            if (sess.hasUnread && sid !== activeSessionId) {
+    function renderSessionTabs() {
+        const currentSessionKeys = Array.from(sessions.keys()).join('|');
+        const needsFullRebuild = lastRenderedSessionKeys !== currentSessionKeys;
+
+        if (needsFullRebuild) {
+            sessionTabBar.innerHTML = '';
+            
+            sessions.forEach((sess, sid) => {
+                const tab = document.createElement('div');
+                tab.className = `session-tab ${sid === activeSessionId ? 'active' : ''}`;
+                tab.dataset.sid = sid;
+
+                const label = document.createElement('span');
+                label.textContent = `🎧 ${sess.djName || 'DJ'}`;
+                tab.appendChild(label);
+
                 const unreadBadge = document.createElement('span');
                 unreadBadge.className = 'badge-unread';
                 unreadBadge.title = '新曲SEND受信';
+                unreadBadge.style.display = (sess.hasUnread && sid !== activeSessionId) ? 'inline-block' : 'none';
                 tab.appendChild(unreadBadge);
-            }
-            const closeButton = document.createElement('span');
-            closeButton.className = 'close-btn';
-            closeButton.title = '削除';
-            closeButton.textContent = '×';
-            tab.appendChild(closeButton);
 
-            tab.addEventListener('click', (e) => {
-                if (e.target.classList.contains('close-btn')) {
-                    e.stopPropagation();
-                    removeSession(sid);
+                const closeButton = document.createElement('span');
+                closeButton.className = 'close-btn';
+                closeButton.title = '削除';
+                closeButton.textContent = '×';
+                tab.appendChild(closeButton);
+
+                tab.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('close-btn')) {
+                        e.stopPropagation();
+                        removeSession(sid);
+                    } else {
+                        switchSession(sid);
+                    }
+                });
+
+                let pressTimer = null;
+                tab.addEventListener('touchstart', (e) => {
+                    pressTimer = setTimeout(() => {
+                        removeSession(sid);
+                    }, 600);
+                }, { passive: true });
+
+                tab.addEventListener('touchend', () => {
+                    if (pressTimer) clearTimeout(pressTimer);
+                });
+                tab.addEventListener('touchmove', () => {
+                    if (pressTimer) clearTimeout(pressTimer);
+                });
+
+                sessionTabBar.appendChild(tab);
+            });
+
+            const addBtn = document.createElement('button');
+            addBtn.type = 'button';
+            addBtn.className = 'session-add-btn';
+            addBtn.id = 'addSessionBtn';
+            addBtn.textContent = '+ 追加';
+            addBtn.addEventListener('click', openAddSessionModal);
+            sessionTabBar.appendChild(addBtn);
+
+            lastRenderedSessionKeys = currentSessionKeys;
+        } else {
+            // 差分更新: active クラスと未読バッジの切り替えのみ
+            const tabs = sessionTabBar.querySelectorAll('.session-tab');
+            tabs.forEach((tab) => {
+                const sid = tab.dataset.sid;
+                const sess = sessions.get(sid);
+                if (!sess) return;
+
+                if (sid === activeSessionId) {
+                    tab.classList.add('active');
                 } else {
-                    switchSession(sid);
+                    tab.classList.remove('active');
+                }
+
+                const badge = tab.querySelector('.badge-unread');
+                if (badge) {
+                    badge.style.display = (sess.hasUnread && sid !== activeSessionId) ? 'inline-block' : 'none';
                 }
             });
-
-            let pressTimer = null;
-            tab.addEventListener('touchstart', (e) => {
-                pressTimer = setTimeout(() => {
-                    removeSession(sid);
-                }, 600);
-            }, { passive: true });
-
-            tab.addEventListener('touchend', () => {
-                if (pressTimer) clearTimeout(pressTimer);
-            });
-            tab.addEventListener('touchmove', () => {
-                if (pressTimer) clearTimeout(pressTimer);
-            });
-
-            sessionTabBar.appendChild(tab);
-        });
-
-        const addBtn = document.createElement('button');
-        addBtn.type = 'button';
-        addBtn.className = 'session-add-btn';
-        addBtn.id = 'addSessionBtn';
-        addBtn.textContent = '+ 追加';
-        addBtn.addEventListener('click', openAddSessionModal);
-        sessionTabBar.appendChild(addBtn);
+        }
     }
+
+    // 前回描画時のトラック数を保持（差分更新判定用）
+    let lastRenderedTrackCount = -1;
+    let lastRenderedSessionId = null;
 
     function renderPlaylist() {
         const current = sessions.get(activeSessionId);
@@ -602,30 +736,48 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
-        playlistContainer.innerHTML = '';
         const { tracks, nowPlayingIdx, sentIdx } = current.state;
 
-        tracks.forEach((track, i) => {
-            const item = document.createElement('div');
-            item.className = 'playlist-item';
-            
-            if (i < nowPlayingIdx) item.classList.add('played');
-            if (i === nowPlayingIdx) item.style.borderLeft = "3px solid #fff";
-            if (i === sentIdx) {
-                item.style.borderLeft = "3px solid var(--danger-color, #ff3366)";
-                item.style.background = "rgba(255, 51, 102, 0.1)";
-            }
+        // トラックリストが変更された場合のみ全再構築（セッション切替 or トラック数変動）
+        const needsFullRebuild = lastRenderedSessionId !== activeSessionId
+            || lastRenderedTrackCount !== tracks.length
+            || playlistContainer.children.length !== tracks.length;
 
-            const pTitle = document.createElement('div');
-            pTitle.className = 'p-title';
-            pTitle.textContent = `${i + 1}. ${track.title}`;
-            const pArtist = document.createElement('div');
-            pArtist.className = 'p-artist';
-            pArtist.textContent = track.artist;
-            item.appendChild(pTitle);
-            item.appendChild(pArtist);
-            playlistContainer.appendChild(item);
-        });
+        if (needsFullRebuild) {
+            playlistContainer.innerHTML = '';
+            tracks.forEach((track, i) => {
+                const item = document.createElement('div');
+                item.className = 'playlist-item';
+
+                const pTitle = document.createElement('div');
+                pTitle.className = 'p-title';
+                pTitle.textContent = `${i + 1}. ${track.title}`;
+                const pArtist = document.createElement('div');
+                pArtist.className = 'p-artist';
+                pArtist.textContent = track.artist;
+                item.appendChild(pTitle);
+                item.appendChild(pArtist);
+                playlistContainer.appendChild(item);
+            });
+            lastRenderedTrackCount = tracks.length;
+            lastRenderedSessionId = activeSessionId;
+        }
+
+        // クラス・スタイルのみ差分更新（DOM再構築なし）
+        for (let i = 0; i < playlistContainer.children.length; i++) {
+            const item = playlistContainer.children[i];
+            // クラスをリセット
+            item.className = 'playlist-item';
+            item.style.borderLeft = '';
+            item.style.background = '';
+
+            if (i < nowPlayingIdx) item.classList.add('played');
+            if (i === nowPlayingIdx) item.style.borderLeft = '3px solid #fff';
+            if (i === sentIdx) {
+                item.style.borderLeft = '3px solid var(--danger-color, #ff3366)';
+                item.style.background = 'rgba(255, 51, 102, 0.1)';
+            }
+        }
 
         const activeIdx = sentIdx !== -1 ? sentIdx : nowPlayingIdx;
         const activeItem = playlistContainer.children[activeIdx];
@@ -642,12 +794,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function applyMarquee(el, text) {
         if (!el) return;
-        el.textContent = text;
+        const normalizedText = String(text ?? '');
+        if (el.dataset.lastMarqueeText === normalizedText) return;
+        el.dataset.lastMarqueeText = normalizedText;
+
+        el.textContent = normalizedText;
         el.classList.remove('is-marquee');
         el.style.transform = 'translateX(0)';
         
         requestAnimationFrame(() => {
-            if (el.scrollWidth > el.parentElement.clientWidth) {
+            if (el.parentElement && el.scrollWidth > el.parentElement.clientWidth) {
                 const dist = el.scrollWidth - el.parentElement.clientWidth + 10;
                 el.style.setProperty('--scroll-dist', `-${dist}px`);
                 el.classList.add('is-marquee');
@@ -717,31 +873,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function flashSendBox(className) {
-        const sendBox = document.getElementById('sendTrackBox');
-        const mainApp = document.getElementById('mainApp');
-        const container = document.querySelector('.container');
-        const panels = document.querySelectorAll('.glass-panel');
-
         document.body.classList.remove('is-flashing-danger', 'is-flashing-success');
-        if (mainApp) mainApp.classList.remove('is-flashing-danger', 'is-flashing-success');
-        if (container) container.classList.remove('is-flashing-danger', 'is-flashing-success');
-        if (sendBox) sendBox.classList.remove('is-flashing-danger', 'is-flashing-success');
-        panels.forEach(p => p.classList.remove('is-flashing-danger', 'is-flashing-success'));
-        
-        void document.body.offsetWidth;
+        void document.body.offsetWidth; // reflow強制でアニメーション再発火
 
         document.body.classList.add(className);
-        if (mainApp) mainApp.classList.add(className);
-        if (container) container.classList.add(className);
-        if (sendBox) sendBox.classList.add(className);
-        panels.forEach(p => p.classList.add(className));
 
         setTimeout(() => {
             document.body.classList.remove(className);
-            if (mainApp) mainApp.classList.remove(className);
-            if (container) container.classList.remove(className);
-            if (sendBox) sendBox.classList.remove(className);
-            panels.forEach(p => p.classList.remove(className));
         }, 3000);
     }
 
@@ -860,20 +998,61 @@ document.addEventListener('DOMContentLoaded', async () => {
         })[m]);
     }
 
+    async function syncVjSession(sessionObj) {
+        if (!sessionObj || sessionObj.syncInFlight) return;
+        sessionObj.syncInFlight = true;
+        try {
+            const data = await apiRequest('action.php?action=sync&role=vj', {
+                method: 'POST',
+                body: JSON.stringify({ sessionId: sessionObj.sessionId, token: sessionObj.token })
+            });
+            if (!data.state || !Number.isInteger(data.state.stateVersion)) {
+                throw new Error('Invalid VJ sync state');
+            }
+            const previousVersion = sessionObj.state.stateVersion;
+            sessionObj.state.tracks = data.state.tracks;
+            sessionObj.state.nowPlayingIdx = data.state.nowPlayingIdx;
+            sessionObj.state.sentIdx = data.state.sentIdx;
+            sessionObj.state.customTrack = data.state.customTrack || null;
+            sessionObj.state.stateVersion = data.state.stateVersion;
+            if (previousVersion !== sessionObj.state.stateVersion) {
+                sessionObj.state.vjReady = false;
+                sessionObj.state.readyForVersion = null;
+            }
+            if (activeSessionId === sessionObj.sessionId) {
+                renderPlaylist();
+                updateDisplay();
+            }
+        } catch (error) {
+            console.warn('VJ状態同期に失敗しました', error);
+            sessionObj.syncRetryOnReconnect = true;
+        } finally {
+            sessionObj.syncInFlight = false;
+        }
+    }
+
     // READYボタン処理
     const readyBtn = document.getElementById('readyBtn');
     if (readyBtn) {
         readyBtn.addEventListener('click', async () => {
             const current = sessions.get(activeSessionId);
-            if (!current) return;
+            if (!current || current.state.readyForVersion === current.state.stateVersion) return;
             try {
-                await apiRequest('action.php?action=ready&role=vj', {
+                const response = await apiRequest('action.php?action=ready&role=vj', {
                     method: 'POST',
-                    body: JSON.stringify({ sessionId: current.sessionId, token: current.token })
+                    body: JSON.stringify({
+                        sessionId: current.sessionId,
+                        token: current.token,
+                        readyForVersion: current.state.stateVersion
+                    })
                 });
-                current.state.vjReady = true;
-                updateDisplay();
-                flashSendBox('is-flashing-success');
+                if (response.action === 'vj-ready'
+                    && response.readyForVersion === current.state.stateVersion) {
+                    current.state.vjReady = true;
+                    current.state.readyForVersion = response.readyForVersion;
+                    updateDisplay();
+                    flashSendBox('is-flashing-success');
+                }
             } catch(e) {
                 console.error("READY送信エラー", e);
             }

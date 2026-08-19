@@ -67,13 +67,21 @@ const MAX_ARTIST_LENGTH = 200; // アーティスト名の最大文字数
 define('SESSION_LIFETIME', $SESSION_LIFETIME);
 
 function garbageCollectExpiredData() {
+    // 確率的実行: 1/50 (2%) のリクエストでのみGCを実行し、通常リクエストの遅延を防ぐ。
+    if (random_int(1, 50) !== 1) {
+        return;
+    }
     $now = time();
     foreach (glob(DATA_DIR . '*.json') ?: [] as $dataFile) {
-        $data = json_decode((string)file_get_contents($dataFile), true);
-        $createdAt = is_array($data) ? ($data['created_at'] ?? 0) : 0;
-        $age = $createdAt > 0 ? $now - $createdAt : $now - (int)filemtime($dataFile);
-        if ($age > SESSION_LIFETIME) {
+        $mtime = @filemtime($dataFile);
+        if ($mtime !== false && ($now - $mtime) > SESSION_LIFETIME) {
             @unlink($dataFile);
+        }
+    }
+    foreach (glob(DATA_DIR . '.rate_*.json') ?: [] as $rateFile) {
+        $mtime = @filemtime($rateFile);
+        if ($mtime !== false && ($now - $mtime) > 120) {
+            @unlink($rateFile);
         }
     }
 }
@@ -83,8 +91,8 @@ garbageCollectExpiredData();
 // データディレクトリが存在しなければ作成
 if (!file_exists(DATA_DIR)) {
     mkdir(DATA_DIR, 0755, true);
-    // セキュリティのための.htaccess作成
-    file_put_contents(DATA_DIR . '.htaccess', "Deny from all\n");
+    // セキュリティのための.htaccess作成 (Apache 2.4+ / 2.2 両対応)
+    file_put_contents(DATA_DIR . '.htaccess', "Options -Indexes\n<IfModule mod_authz_core.c>\n    Require all denied\n</IfModule>\n<IfModule !mod_authz_core.c>\n    Order allow,deny\n    Deny from all\n</IfModule>\n");
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -101,11 +109,10 @@ if (!is_array($input)
     || !is_string($input['djPassword'])
     || !is_string($input['vjPassword'])
     || !preg_match('/^[A-Za-z0-9_-]{1,100}$/', $input['accountName'])
-    || strlen($input['djPassword']) > 200
-    || strlen($input['vjPassword']) > 200
-    || $input['djPassword'] === ''
-    || $input['vjPassword'] === '') {
-    echo json_encode(['success' => false, 'error' => 'Invalid parameters']);
+    || !preg_match('/^[0-9]{4}$/', $input['djPassword'])
+    || !preg_match('/^[0-9]{4}$/', $input['vjPassword'])) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'errorCode' => 'INVALID_INPUT', 'error' => 'Passwords must be exactly four digits']);
     exit;
 }
 
@@ -169,6 +176,7 @@ $sessionData = [
     'tracks' => $sanitizedTracks,  // サニタイズ済みの tracks を保存
     'nowPlayingIdx' => 0,
     'sentIdx' => -1,
+    'stateVersion' => 0,
     'created_at' => time()
 ];
 

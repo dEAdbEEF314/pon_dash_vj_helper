@@ -32,8 +32,9 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             parsedTracks = await PlaylistParser.parse(file);
             
-            // プレビュー表示
+            // プレビュー表示 (DocumentFragment による一括DOM挿入で高速化)
             previewList.innerHTML = '';
+            const fragment = document.createDocumentFragment();
             parsedTracks.forEach((track, index) => {
                 const item = document.createElement('div');
                 item.className = 'playlist-item';
@@ -46,8 +47,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 pArtist.textContent = track.artist;
                 item.appendChild(pTitle);
                 item.appendChild(pArtist);
-                previewList.appendChild(item);
+                fragment.appendChild(item);
             });
+            previewList.appendChild(fragment);
+
             
             trackCount.textContent = `(${parsedTracks.length} tracks)`;
             previewArea.classList.remove('hidden');

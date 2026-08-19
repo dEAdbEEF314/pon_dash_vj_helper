@@ -2,33 +2,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     await fetchAppConfig();
 
     window.flashScreen = function flashScreen(className) {
-        const sendBox = document.getElementById('sendTrackBox');
-        const mainApp = document.getElementById('mainApp');
-        const container = document.querySelector('.container');
-        const panels = document.querySelectorAll('.glass-panel');
-
         document.body.classList.remove('is-flashing-danger', 'is-flashing-success');
-        if (mainApp) mainApp.classList.remove('is-flashing-danger', 'is-flashing-success');
-        if (container) container.classList.remove('is-flashing-danger', 'is-flashing-success');
-        if (sendBox) sendBox.classList.remove('is-flashing-danger', 'is-flashing-success');
-        panels.forEach(p => p.classList.remove('is-flashing-danger', 'is-flashing-success'));
-        
-        void document.body.offsetWidth;
+        void document.body.offsetWidth; // reflow強制でアニメーション再発火
 
         document.body.classList.add(className);
-        if (mainApp) mainApp.classList.add(className);
-        if (container) container.classList.add(className);
-        if (sendBox) sendBox.classList.add(className);
-        panels.forEach(p => p.classList.add(className));
 
         setTimeout(() => {
             document.body.classList.remove(className);
-            if (mainApp) mainApp.classList.remove(className);
-            if (container) container.classList.remove(className);
-            if (sendBox) sendBox.classList.remove(className);
-            panels.forEach(p => p.classList.remove(className));
         }, 3000);
     };
+
 
     const recoveryKey = 'pdvh.dj.session';
     let savedRecovery = null;
@@ -55,8 +38,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         nowPlayingIdx: 0,
         selectedIdx: -1,
         sentIdx: -1,
-        customTrack: null
+        customTrack: null,
+        stateVersion: 0,
+        vjReadyForVersion: null
     };
+    let syncInFlight = false;
+    let syncRetryOnReconnect = false;
+    let syncRequired = false;
+    let pendingStateEvents = [];
+    let pusherConnection = null;
 
     let token = '';
 
@@ -113,43 +103,163 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // 初期状態セット
-    function initState(serverState) {
+    function initState(serverState, preserveReady = false) {
+        const previousReady = state.vjReadyForVersion;
         state.tracks = serverState.tracks;
         state.nowPlayingIdx = serverState.nowPlayingIdx;
         state.sentIdx = serverState.sentIdx;
         state.customTrack = serverState.customTrack || null;
+        state.stateVersion = Number.isInteger(serverState.stateVersion) ? serverState.stateVersion : 0;
+        state.vjReadyForVersion = preserveReady ? previousReady : null;
+        if (!preserveReady) resetReady();
         renderPlaylist();
         updateDisplay();
     }
 
-    // プレイリスト描画
+    function resetReady() {
+        state.vjReadyForVersion = null;
+        const badge = document.getElementById('vjReadyBadge');
+        const sendBox = document.getElementById('sendTrackBox');
+        if (badge) badge.style.display = 'none';
+        if (sendBox) sendBox.classList.remove('vj-ready-highlight');
+    }
+
+    function applyStateEvent(data) {
+        if (!data || !Number.isInteger(data.stateVersion)) return false;
+
+        if (data.action === 'rollback') {
+            const versionChanged = data.stateVersion !== state.stateVersion;
+            state.sentIdx = data.sentIdx;
+            state.nowPlayingIdx = data.nowPlayingIdx;
+            state.customTrack = data.customTrack || null;
+            state.stateVersion = data.stateVersion;
+            if (versionChanged) {
+                resetReady();
+            } else if (state.vjReadyForVersion !== state.stateVersion) {
+                resetReady();
+            }
+            renderPlaylist();
+            updateDisplay();
+            return true;
+        }
+
+        if (data.stateVersion <= state.stateVersion) return true;
+        if (data.stateVersion !== state.stateVersion + 1) return false;
+
+        if (data.action === 'send') {
+            state.sentIdx = data.sentIdx;
+            if (Object.prototype.hasOwnProperty.call(data, 'nowPlayingIdx')) {
+                state.nowPlayingIdx = data.nowPlayingIdx;
+            }
+            state.customTrack = data.customTrack || null;
+            state.stateVersion = data.stateVersion;
+            resetReady();
+        } else if (data.action === 'auto-next') {
+            state.nowPlayingIdx = data.nowPlayingIdx;
+            state.stateVersion = data.stateVersion;
+            resetReady();
+        } else {
+            return false;
+        }
+
+        renderPlaylist();
+        updateDisplay();
+        return true;
+    }
+
+    function queueStateEvent(data) {
+        if (data && Number.isInteger(data.stateVersion)) {
+            pendingStateEvents.push(data);
+        }
+    }
+
+    async function drainPendingStateEvents() {
+        const events = pendingStateEvents
+            .sort((a, b) => a.stateVersion - b.stateVersion);
+        pendingStateEvents = [];
+
+        for (const event of events) {
+            if (syncRequired || syncInFlight) {
+                queueStateEvent(event);
+                return;
+            }
+            if (!applyStateEvent(event)) {
+                syncRequired = true;
+                queueStateEvent(event);
+                await syncState();
+                return;
+            }
+        }
+    }
+
+    async function syncState() {
+        if (syncInFlight) return;
+        syncInFlight = true;
+        syncRequired = true;
+        try {
+            const data = await apiRequest('action.php?action=sync&role=dj', {
+                method: 'POST',
+                body: JSON.stringify({ sessionId, token })
+            });
+            if (!data.state || !Number.isInteger(data.state.stateVersion)) {
+                throw new Error('Invalid sync state');
+            }
+
+            const previousVersion = state.stateVersion;
+            initState(data.state, data.state.stateVersion === previousVersion);
+            syncRetryOnReconnect = false;
+            syncRequired = false;
+            await drainPendingStateEvents();
+        } catch (error) {
+            syncRetryOnReconnect = true;
+            console.warn('同期に失敗しました。Pusher復旧時に再試行します。', error);
+        } finally {
+            syncInFlight = false;
+        }
+    }
+
+    // プレイリスト描画（差分更新: トラック数変更時のみ全再構築）
+    let lastDjRenderedTrackCount = -1;
+
     function renderPlaylist() {
-        playlistContainer.innerHTML = '';
-        state.tracks.forEach((track, i) => {
-            const item = document.createElement('div');
+        const needsFullRebuild = lastDjRenderedTrackCount !== state.tracks.length
+            || playlistContainer.children.length !== state.tracks.length;
+
+        if (needsFullRebuild) {
+            playlistContainer.innerHTML = '';
+            state.tracks.forEach((track, i) => {
+                const item = document.createElement('div');
+                item.className = 'playlist-item';
+
+                // XSS対策: innerHTML ではなく textContent を使用 (H-1)
+                const pTitle = document.createElement('div');
+                pTitle.className = 'p-title';
+                pTitle.textContent = `${i + 1}. ${track.title}`;
+                const pArtist = document.createElement('div');
+                pArtist.className = 'p-artist';
+                pArtist.textContent = track.artist;
+                item.appendChild(pTitle);
+                item.appendChild(pArtist);
+
+                item.addEventListener('click', () => {
+                    // すでに再生済みの曲より前の曲は選択不可にしてもよいが、今回は自由選択とする
+                    state.selectedIdx = i;
+                    renderPlaylist();
+                    updateDisplay();
+                });
+
+                playlistContainer.appendChild(item);
+            });
+            lastDjRenderedTrackCount = state.tracks.length;
+        }
+
+        // クラスのみ差分更新（DOM再構築なし）
+        for (let i = 0; i < playlistContainer.children.length; i++) {
+            const item = playlistContainer.children[i];
             item.className = 'playlist-item';
             if (i < state.nowPlayingIdx) item.classList.add('played');
             if (i === state.selectedIdx) item.classList.add('selected');
-            
-            // XSS対策: innerHTML ではなく textContent を使用 (H-1)
-            const pTitle = document.createElement('div');
-            pTitle.className = 'p-title';
-            pTitle.textContent = `${i + 1}. ${track.title}`;
-            const pArtist = document.createElement('div');
-            pArtist.className = 'p-artist';
-            pArtist.textContent = track.artist;
-            item.appendChild(pTitle);
-            item.appendChild(pArtist);
-            
-            item.addEventListener('click', () => {
-                // すでに再生済みの曲より前の曲は選択不可にしてもよいが、今回は自由選択とする
-                state.selectedIdx = i;
-                renderPlaylist();
-                updateDisplay();
-            });
-            
-            playlistContainer.appendChild(item);
-        });
+        }
 
         // スクロール位置の自動調整（現在再生中へ、コンテナ外部スクロール防止）
         const activeItem = playlistContainer.children[state.nowPlayingIdx];
@@ -164,15 +274,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // 左右往復スクロール適用
+    // 左右往復スクロール適用（テキスト差分ガード付きでレイアウトスラッシングを防止）
     function applyMarquee(el, text) {
         if (!el) return;
-        el.textContent = text;
+        const normalizedText = String(text ?? '');
+        if (el.dataset.lastMarqueeText === normalizedText) return;
+        el.dataset.lastMarqueeText = normalizedText;
+
+        el.textContent = normalizedText;
         el.classList.remove('is-marquee');
         el.style.transform = 'translateX(0)';
         
         requestAnimationFrame(() => {
-            if (el.scrollWidth > el.parentElement.clientWidth) {
+            if (el.parentElement && el.scrollWidth > el.parentElement.clientWidth) {
                 const dist = el.scrollWidth - el.parentElement.clientWidth + 10;
                 el.style.setProperty('--scroll-dist', `-${dist}px`);
                 el.classList.add('is-marquee');
@@ -337,35 +451,49 @@ document.addEventListener('DOMContentLoaded', async () => {
             cluster: PUSHER_CLUSTER
         });
 
+        pusherConnection = pusher.connection;
+        pusherConnection.bind('state_change', (states) => {
+            if (states.current === 'connected' && syncRetryOnReconnect) {
+                syncState();
+            }
+            if (states.current === 'disconnected' || states.current === 'unavailable') {
+                syncState();
+            }
+        });
+
         const channel = pusher.subscribe(`session-${sessionId}`);
-        
-        channel.bind('state-updated', function(data) {
-            // 他のクライアント（VJなど）が操作した場合の反映
-            if(data.action === 'vj-ready') {
+        channel.bind('state-updated', async function(data) {
+            if (syncInFlight || syncRequired) {
+                queueStateEvent(data);
+                return;
+            }
+
+            if (data.action === 'vj-ready') {
+                if (!Number.isInteger(data.stateVersion)
+                    || data.stateVersion < state.stateVersion
+                    || data.stateVersion !== state.stateVersion
+                    || data.readyForVersion !== state.stateVersion) {
+                    return;
+                }
+                if (state.vjReadyForVersion === data.readyForVersion) return;
+
+                state.vjReadyForVersion = data.readyForVersion;
                 const badge = document.getElementById('vjReadyBadge');
-                badge.style.display = 'inline-block';
+                if (badge) badge.style.display = 'inline-block';
                 const sendBox = document.getElementById('sendTrackBox');
-                sendBox.classList.remove('vj-ready-highlight');
+                if (sendBox) sendBox.classList.remove('vj-ready-highlight');
                 flashScreen('is-flashing-success');
-                setTimeout(() => { 
-                    // まだ別の操作でリセットされていなければ色反転を適用
-                    if (badge.style.display !== 'none') {
+                setTimeout(() => {
+                    if (state.vjReadyForVersion === state.stateVersion && sendBox) {
                         sendBox.classList.add('vj-ready-highlight');
                     }
                 }, 5000);
-            } else if (data.action === 'auto-next') {
-                state.nowPlayingIdx = data.nowPlayingIdx;
-                // state.sentIdx = -1; // 変更: 次の曲に進んでもSEND情報は残す
-                state.selectedIdx = -1;
-                document.getElementById('vjReadyBadge').style.display = 'none';
-                document.getElementById('sendTrackBox').classList.remove('vj-ready-highlight');
-                renderPlaylist();
-                updateDisplay();
-            } else if (data.action === 'send') {
-                state.sentIdx = data.sentIdx;
-                state.customTrack = data.customTrack || null;
-                renderPlaylist();
-                updateDisplay();
+                return;
+            }
+
+            if (!applyStateEvent(data)) {
+                queueStateEvent(data);
+                await syncState();
             }
         });
     }
@@ -385,14 +513,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         sendInFlight = true;
         sendBtn.disabled = true;
         try {
-            await apiRequest('action.php?action=send&role=dj', {
+            const response = await apiRequest('action.php?action=send&role=dj', {
                 method: 'POST',
                 body: JSON.stringify({ sessionId, token, sendIdx: targetIdx })
             });
 
-            // UI更新
-            state.sentIdx = targetIdx;
-            state.customTrack = null; // 通常送信のためクリア
+            // 成功レスポンスの差分を適用する。
+            applyStateEvent(response);
+            state.selectedIdx = -1;
             document.getElementById('vjReadyBadge').style.display = 'none'; // READYリセット
             document.getElementById('sendTrackBox').classList.remove('vj-ready-highlight'); // ハイライトもリセット
             
@@ -401,11 +529,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             renderPlaylist(); // re-render for selection off
             updateDisplay();
-            
             flashScreen('is-flashing-danger');
-
-            // ボタンが押されたらすぐに情報更新（自動曲送り）
-            await autoNextTrack(targetIdx);
 
         } catch(e) {
             alert("SENDエラー: " + e.message);
@@ -462,13 +586,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             const customTrack = { title, artist, isVibes: true };
 
             try {
-                await apiRequest('action.php?action=send&role=dj', {
+                const response = await apiRequest('action.php?action=send&role=dj', {
                     method: 'POST',
                     body: JSON.stringify({ sessionId, token, customTrack })
                 });
 
-                state.sentIdx = -2;
-                state.customTrack = customTrack;
+                applyStateEvent(response);
                 document.getElementById('vjReadyBadge').style.display = 'none';
                 document.getElementById('sendTrackBox').classList.remove('vj-ready-highlight');
 
@@ -488,23 +611,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // 自動曲送り（カウントダウン後）
-    async function autoNextTrack(newPlayingIdx) {
-        try {
-            await apiRequest('action.php?action=autonext&role=dj', {
-                method: 'POST',
-                body: JSON.stringify({ sessionId, token, nowPlayingIdx: newPlayingIdx })
-            });
-            state.nowPlayingIdx = newPlayingIdx;
-            // state.sentIdx = -1; // 変更: SEND情報を残す
-            state.selectedIdx = -1;
-            document.getElementById('vjReadyBadge').style.display = 'none';
-            renderPlaylist();
-            updateDisplay();
-        } catch(e) {
-            console.error("AutoNextエラー", e);
-        }
-    }
+    // SENDと自動曲送りはサーバー側で原子化する。
+    async function autoNextTrack() {}
 
     // カウントダウンUI
     function startCountdown(seconds, callback) {

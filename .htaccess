@@ -1,9 +1,70 @@
-# さくらのレンタルサーバーで利用できる範囲のHTTP防御
+# さくらのレンタルサーバ（ライトプラン含む）最適化 .htaccess
+# ※ さくらのPHPはCGI版のため、php_value / php_flag は記述厳禁（500エラーの原因になります）
+
+# ディレクトリ一覧表示の無効化
 Options -Indexes
 
+# ==============================================================================
+# 1. セキュリティヘッダー設定 (mod_headers)
+# ==============================================================================
 <IfModule mod_headers.c>
     Header always set X-Content-Type-Options "nosniff"
     Header always set X-Frame-Options "SAMEORIGIN"
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
     Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+    
+    # 静的アセット配信時のVaryヘッダー適正化
+    <FilesMatch "\.(css|js|svg|json|xml|txt)$">
+        Header append Vary "Accept-Encoding"
+    </FilesMatch>
+</IfModule>
+
+# ==============================================================================
+# 2. GZIP圧縮設定 (mod_deflate) - 転送量削減と高速化
+# ==============================================================================
+<IfModule mod_deflate.c>
+    SetOutputFilter DEFLATE
+    
+    # 圧縮済みファイル形式（画像やWebP、Woff2等）は二重圧縮を避けるため除外
+    SetEnvIfNoCase Request_URI \.(?:gif|jpe?g|png|ico|webp|woff|woff2|zip|gz|tar|pdf)$ no-gzip dont-vary
+    
+    # テキスト系・スクリプト系・ベクター画像を圧縮
+    AddOutputFilterByType DEFLATE text/plain text/html text/xml text/css
+    AddOutputFilterByType DEFLATE application/javascript application/x-javascript text/javascript
+    AddOutputFilterByType DEFLATE application/json application/xml application/xhtml+xml
+    AddOutputFilterByType DEFLATE image/svg+xml
+</IfModule>
+
+# ==============================================================================
+# 3. ブラウザキャッシュ設定 (mod_expires) - リピートアクセスの超高速化
+# ==============================================================================
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresDefault "access plus 1 hours"
+    
+    # CSS / JavaScript (1週間)
+    ExpiresByType text/css "access plus 1 weeks"
+    ExpiresByType text/javascript "access plus 1 weeks"
+    ExpiresByType application/javascript "access plus 1 weeks"
+    ExpiresByType application/x-javascript "access plus 1 weeks"
+    
+    # 画像・アイコン・WebP・SVG (1ヶ月)
+    ExpiresByType image/jpeg "access plus 1 months"
+    ExpiresByType image/png "access plus 1 months"
+    ExpiresByType image/gif "access plus 1 months"
+    ExpiresByType image/webp "access plus 1 months"
+    ExpiresByType image/x-icon "access plus 1 months"
+    ExpiresByType image/vnd.microsoft.icon "access plus 1 months"
+    ExpiresByType image/svg+xml "access plus 1 months"
+    
+    # Webフォント (1年)
+    ExpiresByType font/woff "access plus 1 years"
+    ExpiresByType font/woff2 "access plus 1 years"
+    ExpiresByType application/font-woff "access plus 1 years"
+    ExpiresByType application/font-woff2 "access plus 1 years"
+    ExpiresByType application/vnd.ms-fontobject "access plus 1 years"
+    
+    # HTML / JSON は即時性を保つためキャッシュ期間を短縮（HTMLは0秒、JSONは即時反映）
+    ExpiresByType text/html "access plus 0 seconds"
+    ExpiresByType application/json "access plus 0 seconds"
 </IfModule>
