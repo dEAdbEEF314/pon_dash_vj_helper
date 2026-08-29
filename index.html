@@ -4,16 +4,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pon Dash VJ Helper (仮) | DJ/VJ連携</title>
+    <title>ポン出しVJヘルパー | Pon Dash VJ Helper ＞ DJ/VJ連携</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="icon" type="image/png" href="/pon_dash/favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="/pon_dash/favicon.svg" />
     <link rel="shortcut icon" href="/pon_dash/favicon.ico" />
     <link rel="apple-touch-icon" sizes="180x180" href="/pon_dash/apple-touch-icon.png" />
-    <meta name="apple-mobile-web-app-title" content="Pon Dash VJ Helper (仮)" />
+    <meta name="apple-mobile-web-app-title" content="Pon Dash VJ Helper" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Nunito:wght@400;600;700&display=swap"
+        rel="stylesheet">
     <link rel="manifest" href="/pon_dash/site.webmanifest" />
 </head>
 
@@ -21,21 +23,38 @@
     <div class="container landing-container">
         <header class="landing-hero">
             <p class="eyebrow">PON DASH VJ HELPER</p>
-            <h1>DJとVJの連携を、現場で迷わず。</h1>
-            <p class="page-lead">DJが曲情報をSENDし、VJが素材を検索してREADYを返すブラウザアプリです。役割に関係なく、スマートフォン・PCどちらからでも利用できます。</p>
+            <h1>ポン出しVJヘルパー</h1>
+            <h2>DJとVJの連携を、現場で迷わず。</h2>
+            <p class="page-lead">
+                DJが曲情報をSENDし、VJが素材を検索してREADYを返すブラウザアプリです。VGM(ゲーム音楽),アニソン,アーティスト縛りなど、テーマが明確なイベントでのDJとVJの連携をサポートします。役割に関係なく、スマートフォン・PCどちらからでも利用できます。
+            </p>
         </header>
 
         <section class="glass-panel landing-overview" aria-labelledby="overview-heading">
             <h2 id="overview-heading">アプリの趣旨・機能・利用シーン</h2>
             <div class="landing-flow">
-                <div><strong>1. VJ</strong><span>ロビーを開いてコードを共有</span></div>
-                <div><strong>2. DJ</strong><span>プレイリストを登録して連携</span></div>
-                <div><strong>3. 本番</strong><span>SENDとREADYでリアルタイム連携</span></div>
+                <div>
+                    <strong>1. VJ</strong>
+                    <span>ロビーを開いてコードを共有</span>
+                </div>
+                <div>
+                    <strong>2. DJ</strong>
+                    <span>セットリストを登録して連携</span>
+                </div>
+                <div>
+                    <strong>3. 本番</strong>
+                    <span>SENDとREADYでリアルタイム連携</span>
+                </div>
             </div>
             <details>
                 <summary>初めての方へ：もう少し詳しく見る</summary>
-                <p>VJは受け取った曲名から映像素材を検索し、準備ができたらREADYを送ります。DJはプレイリストから曲を選び、SEND TO VJで通知します。DJとVJを兼任するVDJは、先にVJロビーを作成し、その後DJ登録を行うとスムーズです。</p>
-                <p class="device-note"><strong>端末について：</strong>DJ・VJともにスマートフォン／PCで利用できます。スマホは移動中や片手操作、PCは複数セッションや検索結果の確認に便利です。</p>
+                <p>
+                    VJはロビーを開設し、DJへロビーコードを共有します。DJはセットリストを登録し、VJが作成したロビーに接続してください。登録したセットリスト（または自由入力）からDJが曲を選び、SEND TO
+                    VJで通知します。VJはSENDされた情報から素材を検索し、READYボタンでDJへ準備完了を通知します。DJとVJを兼任するVDJは、先にVJロビーを作成し、その後DJ登録を行うとスムーズです。
+                </p>
+                <p class="device-note">
+                    <strong>端末について：</strong>DJ・VJともにスマートフォン／PCで利用できます。DJはスマートフォンでサイドに、VJの複数セッションや検索結果の確認はPCがオススメです。
+                </p>
             </details>
         </section>
 
@@ -43,12 +62,13 @@
             <article class="glass-panel role-card">
                 <p class="role-kicker">DJとして使う</p>
                 <h2>曲をVJへ送る</h2>
-                <p>プレイリストを登録し、曲のSENDとVJ READYの確認を行います。</p>
+                <p>セットリストを登録し、曲のSENDとVJ READYの確認を行います。</p>
                 <div class="role-actions">
-                    <a class="btn btn-primary" href="dj-register.html">DJ事前登録を開始</a>
+                    <a class="btn btn-primary" href="dj-register.html">DJセットリスト登録を開始</a>
                     <a class="btn" href="dj-manual.html">DJ説明書を見る</a>
                 </div>
             </article>
+
             <article class="glass-panel role-card">
                 <p class="role-kicker">VJとして使う</p>
                 <h2>素材を準備する</h2>
@@ -58,6 +78,7 @@
                     <a class="btn" href="vj-manual.html">VJ説明書を見る</a>
                 </div>
             </article>
+
             <article class="glass-panel role-card role-card-vdj">
                 <p class="role-kicker">DJとVJを兼任する</p>
                 <h2>VDJとして使う</h2>
@@ -77,4 +98,5 @@
         </nav>
     </div>
 </body>
+
 </html>

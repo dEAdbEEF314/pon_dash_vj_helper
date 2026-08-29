@@ -4,16 +4,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DJ Control | Pon Dash VJ Helper (仮)</title>
+    <title>ポン出しVJヘルパー | Pon Dash VJ Helper ＞ DJ Control</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="icon" type="image/png" href="/pon_dash/favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="/pon_dash/favicon.svg" />
     <link rel="shortcut icon" href="/pon_dash/favicon.ico" />
     <link rel="apple-touch-icon" sizes="180x180" href="/pon_dash/apple-touch-icon.png" />
-    <meta name="apple-mobile-web-app-title" content="Pon Dash VJ Helper (仮)" />
+    <meta name="apple-mobile-web-app-title" content="Pon Dash VJ Helper" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Nunito:wght@400;600;700&display=swap"
+        rel="stylesheet">
     <link rel="manifest" href="/pon_dash/site.webmanifest" />
 </head>
 
@@ -28,7 +30,8 @@
                     <input type="password" id="password" pattern="\d{4}" placeholder="数字4桁" required>
                 </div>
                 <button type="submit" class="btn btn-primary">ログイン</button>
-                <div id="loginError" style="color: var(--danger-color); margin-top: 10px; display: none;">パスワードが違います
+                <div id="loginError" style="color: var(--danger-color); margin-top: 10px; display: none;">
+                    パスワードが違います
                 </div>
             </form>
         </div>
@@ -38,7 +41,7 @@
         <header class="dj-header">
             <div class="dj-header-main">
                 <h1>DJ Control</h1>
-                <button type="button" class="btn" id="deleteSessionBtn">このセッションを削除</button>
+                <button type="button" class="btn" id="deleteSessionBtn">削除してログアウト</button>
             </div>
             <p id="sessionNameDisplay"></p>
         </header>
@@ -76,14 +79,14 @@
                     <button class="btn btn-send" id="sendBtn">SEND TO VJ</button>
                     <button type="button" class="btn btn-vibes" id="openVibesModalBtn">VIBES!</button>
                 </div>
-                <p class="send-hint">※下段のリストから選択してSEND / 「VIBES!」で手入力SEND</p>
+                <p class="send-hint">※下段のセットリストから選択してSEND / 「VIBES!」で手入力SEND</p>
             </div>
 
-            <!-- 下段：プレイリスト -->
+            <!-- 下段：セットリスト -->
             <div class="glass-panel playlist-section">
                 <div class="section-header">
-                    <h3>プレイリスト</h3>
-                    <span class="header-hint">※タップして次にかける曲をセット</span>
+                    <h3>セットリスト</h3>
+                    <span class="header-hint">※セットリストをタップして次の曲をセット</span>
                 </div>
                 <!-- リスト本体 (スクロール領域) -->
                 <div class="playlist-container" id="playlistContainer">
@@ -131,7 +134,7 @@
             <div class="vibes-modal-body">
                 <form id="vibesForm">
                     <div class="form-group">
-                        <label for="vibesTitleInput">曲名 / メッセージ <span style="color:#ff007f;">*</span></label>
+                        <label for="vibesTitleInput">曲名 / メッセージ / 検索ワード<span style="color:#ff007f;">*</span></label>
                         <input type="text" id="vibesTitleInput" placeholder="例: 新曲 / MCタイム" required autocomplete="off">
                     </div>
                     <div class="form-group">

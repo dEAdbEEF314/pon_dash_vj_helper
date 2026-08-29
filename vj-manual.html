@@ -1,28 +1,213 @@
 <!doctype html>
 <html lang="ja">
+
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>VJ向け 機能・操作説明書 | Pon Dash VJ Helper</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>VJ向け 機能・操作説明書 | Pon Dash VJ Helper</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Nunito:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/style.css">
 </head>
-<body class="manual-page"><main class="manual-container">
-<nav class="manual-nav" aria-label="サイト内ナビゲーション"><a href="index.html">概要</a><a href="dj-register.html">DJ事前登録</a><a href="dj-manual.html">DJ説明書</a><a href="vj.html">VJロビー</a></nav>
-<header class="manual-hero"><div class="manual-eyebrow">PON DASH VJ HELPER / VJ GUIDE</div><h1>VJ向け 機能・操作説明書</h1><p class="manual-lead">DJから届く曲情報を受け取り、素材を検索し、準備完了をREADYで返すための現場向けガイドです。複数DJをタブで管理する流れを中心に説明します。</p></header>
-<nav class="manual-toc" aria-label="目次"><strong>目次</strong><ul><li><a href="#lobby">1. ロビーを開始</a></li><li><a href="#join">2. DJを連携</a></li><li><a href="#mode">3. VJモード</a></li><li><a href="#receive">4. 曲を受け取る</a></li><li><a href="#search">5. 素材を検索</a></li><li><a href="#ready">6. READYを送る</a></li><li><a href="#multi">7. 複数DJを管理</a></li><li><a href="#add">8. セッションを追加</a></li><li><a href="#recover">9. セッション管理</a></li><li><a href="#trouble">10. 困ったとき</a></li></ul></nav>
-<section class="manual-step" id="lobby"><div><h2><span class="manual-step-number">1</span>VJロビーを開始する</h2><p>VJページで <span class="manual-kbd">📡 VJロビーを開く (おすすめ)</span> を押します。10文字のロビーコードが発行されたらDJへ共有してください。</p><div class="manual-action"><strong>現場で最初にすること</strong><br>DJは登録完了画面から同じコードを送信します。VJ側のパスワードをDJへ伝える必要はありません。</div><p>ロビーには連携済みDJセッションの件数と一覧が表示され、DJの追加を待機できます。</p></div><figure class="manual-figure"><img src="pics/vj-01-lobby.png" alt="実画面のVJロビーと複数DJ一覧"><figcaption>図1: 10文字のロビーコード、DJとしても参加する導線、連携済みDJ一覧。</figcaption></figure></section>
-<section class="manual-step" id="join"><div><h2><span class="manual-step-number">2</span>DJセッションを連携する</h2><p>DJがコードを登録完了画面へ入力して送信すると、VJロビーにDJ名が表示されます。人数表示と一覧を確認してください。</p><ol><li>コードをDJへ共有します。</li><li>DJがロビーへ送信するのを待ちます。</li><li>一覧にDJが表示されたら連携完了です。</li></ol><p>複数のDJが同じコードを使えば、同じロビーからまとめて受け付けられます。</p></div><figure class="manual-figure"><img src="pics/vj-01-lobby.png" alt="複数のDJセッションが連携されたVJロビー"><figcaption>図2: ロビーには連携済みDJが一覧で表示されます。</figcaption></figure></section>
-<section class="manual-step" id="mode"><div><h2><span class="manual-step-number">3</span>VJモードを開始する</h2><p>連携済みDJが1つ以上表示されたら、<span class="manual-kbd">📺 VJモードを開始する</span>を押します。VJ VIEWへ移動し、セッションタブ、受信曲、READY、素材検索、プレイリストを使えるようになります。</p><p>VJ VIEWでは上部のタブで操作対象DJを選択します。</p></div><figure class="manual-figure"><img src="pics/vj-02-main.png" alt="実画面のVJ VIEW操作画面"><figcaption>図3: VJ VIEWの全体構成。受信曲、プレイリスト、READY、素材検索を確認できます。</figcaption></figure></section>
-<section class="manual-step" id="receive"><div><h2><span class="manual-step-number">4</span>DJから曲を受け取る</h2><p>DJが <span class="manual-kbd">SEND TO VJ</span> を押すと、選択中DJの「DJからSENDされた曲」が更新されます。曲名とアーティスト名を確認してください。</p><p>受信曲のタイトルまたはアーティスト名をタップすると、素材検索欄へコピーできます。プレイリストは画面下部で確認します。</p><div class="manual-action warning"><strong>VIBES! の曲</strong><br>プレイリスト外の手入力情報には <strong>[VIBES!]</strong> バッジが付きます。曲名ではなくMCや連絡事項の場合もあります。</div></div><figure class="manual-figure"><img src="pics/vj-02-main.png" alt="実プレイリストを表示したVJ VIEW操作画面"><figcaption>図4: 受信曲、次曲、READY、素材検索、プレイリストの実画面。</figcaption></figure></section>
-<section class="manual-step" id="search"><div><h2><span class="manual-step-number">5</span>素材を検索する</h2><p>受信曲のタイトル・アーティスト名をタップして検索欄へコピーするか、検索欄へ直接入力します。検索先を押すと別タブで結果が開きます。</p><div class="checklist"><div>Google</div><div>YouTube</div><div>ニコニコ動画</div><div>GIPHY</div></div><p>曲名だけでなくアーティスト名、MV、ライブ映像などの語を加えると候補を絞りやすくなります。</p></div><figure class="manual-figure"><img src="pics/vj-02-main.png" alt="実画面のVJ素材検索欄と検索ボタン"><figcaption>図5: 検索欄と、4つの外部検索ボタン。</figcaption></figure></section>
-<section class="manual-step" id="ready"><div><h2><span class="manual-step-number">6</span>準備完了をREADYで返す</h2><p>素材を用意できたら、対象DJのタブを選択した状態で <span class="manual-kbd">READY</span> を押します。DJ側の「VJにSENDした曲」にREADY状態が反映されます。</p><p>READYは現在選択中のDJセッションへ送られます。複数DJを管理しているときは、タブ名を確認してから押してください。</p></div><figure class="manual-figure"><img src="pics/vj-02-main.png" alt="実画面のVJ READYボタン"><figcaption>図6: 素材準備後にREADYを返す操作エリア。</figcaption></figure></section>
-<section class="manual-step" id="multi"><div><h2><span class="manual-step-number">7</span>複数DJをタブで管理する</h2><p>上部のセッションタブをタップすると、操作対象DJを切り替えられます。現在のDJ名がアクティブ表示されます。</p><p>見ていないDJから新しい曲が届くと、そのタブに赤い未読丸が付きます。バッジの付いたタブを開いて受信曲を確認してください。</p></div><figure class="manual-figure"><img src="pics/vj-04-multi-session.png" alt="実画面の複数DJセッションタブ"><figcaption>図7: 複数DJのタブと「+ セッション追加」ボタン。</figcaption></figure></section>
-<section class="manual-step" id="add"><div><h2><span class="manual-step-number">8</span>セッションを追加する</h2><p>ロビーを使わずに追加する場合、上部の <span class="manual-kbd">+ セッション追加</span> を押します。</p><ol><li>DJから受け取ったVJ用URLを貼り付けて <span class="manual-kbd">URLから追加</span>。</li><li>または、セッションIDと4桁のVJ閲覧パスワードを入力して <span class="manual-kbd">手動入力で追加</span>。</li></ol><p>追加後はセッションタブに表示されます。URLやパスワードは必要な相手にだけ共有してください。</p></div><figure class="manual-figure"><img src="pics/vj-03-add-session.png" alt="実画面のVJセッション追加モーダル"><figcaption>図8: VJ用URL、またはセッションIDと4桁パスワードで追加する画面。</figcaption></figure></section>
-<section class="manual-step full" id="recover"><h2><span class="manual-step-number">9</span>セッションを削除・復帰する</h2><p>不要になったセッションは、対象タブの削除操作から外します。開催中のセッションを削除するとDJとの連携が切れるため注意してください。</p><p>同じブラウザに保存された復帰情報は<strong>8時間</strong>で失効します。復帰できない場合は、DJからVJ用URLを再共有してもらい、URLまたは手動入力で追加してください。</p><figure class="manual-figure"><img src="pics/vj-05-unread.png" alt="実画面で未読バッジが付いたDJセッションタブ"><figcaption>図9: 別のDJから届いた新着は、対象タブの赤い未読バッジで確認できます。</figcaption></figure></section>
-<section class="manual-note" id="trouble"><h2><span class="manual-step-number">10</span>困ったとき</h2><ul><li>ロビーコードが表示されない: VJページを再読み込みし、VJロビーを開くを押し直します。</li><li>DJが追加されない: 10文字のコード、大文字・小文字、DJ側の送信状態を確認します。</li><li>曲が更新されない: 対象DJのタブ、通信状態、画面の未読バッジを確認します。</li><li>READYが届かない: READYを押す前に対象DJのタブを選び直します。</li><li>検索ボタンを押しても開かない: 検索欄の内容とブラウザのポップアップ制限を確認します。</li></ul></section>
-<section class="manual-step full" id="vdj"><h2><span class="manual-step-number">+</span>DJとVJを兼任する（VDJ）</h2><p>VDJとして使う場合は、先にVJロビーを作成してからDJ登録へ進みます。VJロビー画面の <span class="manual-kbd">DJとしても参加する（登録へ）</span> を押すと、ロビーコードが登録ページへ引き継がれます。</p><ol><li><span class="manual-kbd">VJロビーを開く</span>でロビーを作成します。</li><li>ロビーコードを確認し、<span class="manual-kbd">DJとしても参加する（登録へ）</span>へ進みます。</li><li>プレイリストを登録し、登録完了画面でコードを確認して<span class="manual-kbd">送信</span>します。</li><li>DJ用URLとVJ操作画面を別タブで開き、DJ画面のVJ検索タブも必要に応じて使います。</li><li>VJ画面で素材を検索し、対象DJを選択してREADYを返します。</li></ol><div class="manual-action"><strong>端末の考え方</strong><br>VDJもスマートフォン・PCのどちらでも利用できます。2画面を同時に扱う場合は、PCや複数端末が便利です。</div></section>
-<p class="manual-footer">画面例は Docker + Playwright のビジュアルテストで取得したものを、説明に必要な範囲へ切り出しています。アプリ本体: <a href="vj.html">vj.html</a> / <a href="index.html">index.html</a> / <a href="dj-register.html">dj-register.html</a>　仕様: <a href="docs/PDVH.md">PDVH.md</a></p>
-</main></body></html>
+
+<body class="manual-page">
+    <main class="manual-container">
+        <nav class="manual-nav" aria-label="サイト内ナビゲーション">
+            <a href="index.html">概要</a>
+            <a href="dj-register.html">DJ事前登録</a>
+            <a href="dj-manual.html">DJ説明書</a>
+            <a href="vj.html">VJロビー</a>
+        </nav>
+
+        <header class="manual-hero">
+            <div class="manual-eyebrow">PON DASH VJ HELPER / VJ GUIDE</div>
+            <h1>VJ向け 機能・操作説明書</h1>
+            <p class="manual-lead">
+                DJから届く曲情報を受け取り、素材を検索し、準備完了をREADYで返すための現場向けガイドです。複数DJをタブで管理する流れを中心に説明します。
+            </p>
+        </header>
+
+        <nav class="manual-toc" aria-label="目次">
+            <strong>目次</strong>
+            <ul>
+                <li><a href="#lobby">1. ロビーを開始</a></li>
+                <li><a href="#join">2. DJを連携</a></li>
+                <li><a href="#mode">3. VJモード</a></li>
+                <li><a href="#receive">4. 曲を受け取る</a></li>
+                <li><a href="#search">5. 素材を検索</a></li>
+                <li><a href="#ready">6. READYを送る</a></li>
+                <li><a href="#multi">7. 複数DJを管理</a></li>
+                <li><a href="#add">8. セッションを追加</a></li>
+                <li><a href="#recover">9. セッション管理</a></li>
+                <li><a href="#trouble">10. 困ったとき</a></li>
+            </ul>
+        </nav>
+
+        <section class="manual-step" id="lobby">
+            <div>
+                <h2><span class="manual-step-number">1</span>VJロビーを開始する</h2>
+                <p>VJページで <span class="manual-kbd">📡 VJロビーを開く (おすすめ)</span> を押します。10文字のロビーコードが発行されたらDJへ共有してください。</p>
+                <div class="manual-action">
+                    <strong>現場で最初にすること</strong><br>
+                    DJは登録完了画面から同じコードを送信します。VJ側のパスワードをDJへ伝える必要はありません。
+                </div>
+                <p>ロビーには連携済みDJセッションの件数と一覧が表示され、DJの追加を待機できます。</p>
+            </div>
+            <figure class="manual-figure">
+                <img src="pics/vj-01-lobby.png" alt="実画面のVJロビーと複数DJ一覧">
+                <figcaption>図1: 10文字のロビーコード、DJとしても参加する導線、連携済みDJ一覧。</figcaption>
+            </figure>
+        </section>
+
+        <section class="manual-step" id="join">
+            <div>
+                <h2><span class="manual-step-number">2</span>DJセッションを連携する</h2>
+                <p>DJがコードを登録完了画面へ入力して送信すると、VJロビーにDJ名が表示されます。人数表示と一覧を確認してください。</p>
+                <ol>
+                    <li>コードをDJへ共有します。</li>
+                    <li>DJがロビーへ送信するのを待ちます。</li>
+                    <li>一覧にDJが表示されたら連携完了です。</li>
+                </ol>
+                <p>複数のDJが同じコードを使えば、同じロビーからまとめて受け付けられます。</p>
+            </div>
+            <figure class="manual-figure">
+                <img src="pics/vj-01-lobby.png" alt="複数のDJセッションが連携されたVJロビー">
+                <figcaption>図2: ロビーには連携済みDJが一覧で表示されます。</figcaption>
+            </figure>
+        </section>
+
+        <section class="manual-step" id="mode">
+            <div>
+                <h2><span class="manual-step-number">3</span>VJモードを開始する</h2>
+                <p>連携済みDJが1つ以上表示されたら、<span class="manual-kbd">📺 VJモードを開始する</span>を押します。VJ VIEWへ移動し、セッションタブ、受信曲、READY、素材検索、プレイリストを使えるようになります。</p>
+                <p>VJ VIEWでは上部のタブで操作対象DJを選択します。</p>
+            </div>
+            <figure class="manual-figure">
+                <img src="pics/vj-02-main.png" alt="実画面のVJ VIEW操作画面">
+                <figcaption>図3: VJ VIEWの全体構成。受信曲、プレイリスト、READY、素材検索を確認できます。</figcaption>
+            </figure>
+        </section>
+
+        <section class="manual-step" id="receive">
+            <div>
+                <h2><span class="manual-step-number">4</span>DJから曲を受け取る</h2>
+                <p>DJが <span class="manual-kbd">SEND TO VJ</span> を押すと、選択中DJの「DJからSENDされた曲」が更新されます。曲名とアーティスト名を確認してください。</p>
+                <p>受信曲のタイトルまたはアーティスト名をタップすると、素材検索欄へコピーできます。プレイリストは画面下部で確認します。</p>
+                <div class="manual-action warning">
+                    <strong>VIBES! の曲</strong><br>
+                    プレイリスト外の手入力情報には <strong>[VIBES!]</strong> バッジが付きます。曲名ではなくMCや連絡事項の場合もあります。
+                </div>
+            </div>
+            <figure class="manual-figure">
+                <img src="pics/vj-02-main.png" alt="実プレイリストを表示したVJ VIEW操作画面">
+                <figcaption>図4: 受信曲、次曲、READY、素材検索、プレイリストの実画面。</figcaption>
+            </figure>
+        </section>
+
+        <section class="manual-step" id="search">
+            <div>
+                <h2><span class="manual-step-number">5</span>素材を検索する</h2>
+                <p>受信曲のタイトル・アーティスト名をタップして検索欄へコピーするか、検索欄へ直接入力します。検索先を押すと別タブで結果が開きます。</p>
+                <div class="checklist">
+                    <div>Google</div>
+                    <div>YouTube</div>
+                    <div>ニコニコ動画</div>
+                    <div>GIPHY</div>
+                </div>
+                <p>曲名だけでなくアーティスト名、MV、ライブ映像などの語を加えると候補を絞りやすくなります。</p>
+            </div>
+            <figure class="manual-figure">
+                <img src="pics/vj-02-main.png" alt="実画面のVJ素材検索欄と検索ボタン">
+                <figcaption>図5: 検索欄と、4つの外部検索ボタン。</figcaption>
+            </figure>
+        </section>
+
+        <section class="manual-step" id="ready">
+            <div>
+                <h2><span class="manual-step-number">6</span>準備完了をREADYで返す</h2>
+                <p>素材を用意できたら、対象DJのタブを選択した状態で <span class="manual-kbd">READY</span> を押します。DJ側の「VJにSENDした曲」にREADY状態が反映されます。</p>
+                <p>READYは現在選択中のDJセッションへ送られます。複数DJを管理しているときは、タブ名を確認してから押してください。</p>
+            </div>
+            <figure class="manual-figure">
+                <img src="pics/vj-02-main.png" alt="実画面のVJ READYボタン">
+                <figcaption>図6: 素材準備後にREADYを返す操作エリア。</figcaption>
+            </figure>
+        </section>
+
+        <section class="manual-step" id="multi">
+            <div>
+                <h2><span class="manual-step-number">7</span>複数DJをタブで管理する</h2>
+                <p>上部のセッションタブをタップすると、操作対象DJを切り替えられます。現在のDJ名がアクティブ表示されます。</p>
+                <p>見ていないDJから新しい曲が届くと、そのタブに赤い未読丸が付きます。バッジの付いたタブを開いて受信曲を確認してください。</p>
+            </div>
+            <figure class="manual-figure">
+                <img src="pics/vj-04-multi-session.png" alt="実画面の複数DJセッションタブ">
+                <figcaption>図7: 複数DJのタブと「+ セッション追加」ボタン。</figcaption>
+            </figure>
+        </section>
+
+        <section class="manual-step" id="add">
+            <div>
+                <h2><span class="manual-step-number">8</span>セッションを追加する</h2>
+                <p>ロビーを使わずに追加する場合、上部の <span class="manual-kbd">+ セッション追加</span> を押します。</p>
+                <ol>
+                    <li>DJから受け取ったVJ用URLを貼り付けて <span class="manual-kbd">URLから追加</span>。</li>
+                    <li>または、セッションIDと4桁のVJ閲覧パスワードを入力して <span class="manual-kbd">手動入力で追加</span>。</li>
+                </ol>
+                <p>追加後はセッションタブに表示されます。URLやパスワードは必要な相手にだけ共有してください。</p>
+            </div>
+            <figure class="manual-figure">
+                <img src="pics/vj-03-add-session.png" alt="実画面のVJセッション追加モーダル">
+                <figcaption>図8: VJ用URL、またはセッションIDと4桁パスワードで追加する画面。</figcaption>
+            </figure>
+        </section>
+
+        <section class="manual-step full" id="recover">
+            <h2><span class="manual-step-number">9</span>セッションを削除・復帰する</h2>
+            <p>不要になったセッションは、対象タブの削除操作から外します。開催中のセッションを削除するとDJとの連携が切れるため注意してください。</p>
+            <p>同じブラウザに保存された復帰情報は<strong>8時間</strong>で失効します。復帰できない場合は、DJからVJ用URLを再共有してもらい、URLまたは手動入力で追加してください。</p>
+            <figure class="manual-figure">
+                <img src="pics/vj-05-unread.png" alt="実画面で未読バッジが付いたDJセッションタブ">
+                <figcaption>図9: 別のDJから届いた新着は、対象タブの赤い未読バッジで確認できます。</figcaption>
+            </figure>
+        </section>
+
+        <section class="manual-note" id="trouble">
+            <h2><span class="manual-step-number">10</span>困ったとき</h2>
+            <ul>
+                <li>ロビーコードが表示されない: VJページを再読み込みし、VJロビーを開くを押し直します。</li>
+                <li>DJが追加されない: 10文字のコード、大文字・小文字、DJ側の送信状態を確認します。</li>
+                <li>曲が更新されない: 対象DJのタブ、通信状態、画面の未読バッジを確認します。</li>
+                <li>READYが届かない: READYを押す前に対象DJのタブを選び直します。</li>
+                <li>検索ボタンを押しても開かない: 検索欄の内容とブラウザのポップアップ制限を確認します。</li>
+            </ul>
+        </section>
+
+        <section class="manual-step full" id="vdj">
+            <h2><span class="manual-step-number">+</span>DJとVJを兼任する（VDJ）</h2>
+            <p>VDJとして使う場合は、先にVJロビーを作成してからDJ登録へ進みます。VJロビー画面の <span class="manual-kbd">DJとしても参加する（登録へ）</span> を押すと、ロビーコードが登録ページへ引き継がれます。</p>
+            <ol>
+                <li><span class="manual-kbd">VJロビーを開く</span>でロビーを作成します。</li>
+                <li>ロビーコードを確認し、<span class="manual-kbd">DJとしても参加する（登録へ）</span>へ進みます。</li>
+                <li>プレイリストを登録し、登録完了画面でコードを確認して<span class="manual-kbd">送信</span>します。</li>
+                <li>DJ用URLとVJ操作画面を別タブで開き、DJ画面のVJ検索タブも必要に応じて使います。</li>
+                <li>VJ画面で素材を検索し、対象DJを選択してREADYを返します。</li>
+            </ol>
+            <div class="manual-action">
+                <strong>端末の考え方</strong><br>
+                VDJもスマートフォン・PCのどちらでも利用できます。2画面を同時に扱う場合は、PCや複数端末が便利です。
+            </div>
+        </section>
+
+        <p class="manual-footer">
+            画面例は Docker + Playwright のビジュアルテストで取得したものを、説明に必要な範囲へ切り出しています。
+            アプリ本体: <a href="vj.html">vj.html</a> / <a href="index.html">index.html</a> / <a href="dj-register.html">dj-register.html</a>
+            　仕様: <a href="docs/PDVH.md">PDVH.md</a>
+        </p>
+    </main>
+</body>
+
+</html>
+

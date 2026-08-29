@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VJ Viewer | Pon Dash VJ Helper (仮)</title>
+    <title>VJ Viewer | Pon Dash VJ Helper</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="icon" type="image/png" href="/pon_dash/favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="/pon_dash/favicon.svg" />
@@ -13,7 +13,9 @@
     <meta name="apple-mobile-web-app-title" content="Pon Dash VJ Helper (仮)" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Nunito:wght@400;600;700&display=swap"
+        rel="stylesheet">
     <link rel="manifest" href="/pon_dash/site.webmanifest" />
 </head>
 
@@ -23,65 +25,70 @@
         <div class="vj-entry-shell">
             <nav class="page-nav vj-entry-nav" aria-label="サイト内ナビゲーション">
                 <a href="index.html">概要</a>
-                <a href="dj-register.html">DJ事前登録</a>
+                <a href="dj-register.html">DJセットリスト登録</a>
                 <a href="dj-manual.html">DJ説明書</a>
                 <a href="vj-manual.html">VJ説明書</a>
             </nav>
             <div class="glass-panel vj-entry-panel" id="modeSelectPanel">
                 <p class="vj-entry-eyebrow">PON DASH VJ HELPER / VJ LOBBY</p>
                 <h1>VJロビーを開く</h1>
-                <p class="vj-entry-lead">DJから届く曲情報を受け取り、素材を検索してREADYを返します。スマートフォン・PCのどちらからでも利用できます。</p>
-            <p style="font-size: 0.85rem; margin-bottom: 20px; color: var(--text-secondary);">モードを選択してください</p>
-            <button type="button" class="btn btn-primary" id="startLobbyBtn"
-                style="width: 100%; height: 50px; font-size: 1.1rem; margin-bottom: 12px;">
-                📡 VJロビーを開く (おすすめ)
-            </button>
-            <p style="font-size: 0.75rem; color: #00ffcc; margin-bottom: 15px;">※DJにコードを伝えるだけで自動連携されます</p>
-            <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
-            <button type="button" class="btn" id="showDirectLoginBtn" style="width: 100%;">
-                🔑 単一セッションに直接ログイン
-            </button>
+                <p class="vj-entry-lead">DJから届く情報を受け取り、素材を検索してREADYを返します。スマートフォン・PCのどちらからでも利用できます。</p>
+                <p style="font-size: 0.85rem; margin-bottom: 20px; color: var(--text-secondary);">モードを選択してください</p>
+                <button type="button" class="btn btn-primary" id="startLobbyBtn"
+                    style="width: 100%; height: 50px; font-size: 1.1rem; margin-bottom: 12px;">
+                    📡 VJロビーを開く (通常はこちら)
+                </button>
+                <p style="font-size: 0.75rem; color: #00ffcc; margin-bottom: 15px;">※DJにコードを伝えて、ロビーへしてもらいましょう</p>
+                <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
+                <button type="button" class="btn" id="showDirectLoginBtn" style="width: 100%;">
+                    🔑 単一セッションに直接ログイン（確認用）
+                </button>
             </div>
 
             <!-- 1. VJロビー画面 -->
             <div class="glass-panel hidden vj-entry-panel" id="lobbyScreen">
-            <h2 style="font-size: 1.2rem; margin-bottom: 5px;">VJ Lobby</h2>
-            <p style="font-size: 0.8rem; margin: 0;">DJに以下のコードを伝えてください</p>
+                <h2 style="font-size: 1.2rem; margin-bottom: 5px;">VJ Lobby</h2>
+                <p style="font-size: 0.8rem; margin: 0;">DJに以下のコードを伝えてください</p>
 
-            <div class="lobby-code-display" id="lobbyCodeDisplay">------</div>
-            <a href="dj-register.html" id="vdjRegisterLink" class="btn" style="width: 100%; display: inline-block; margin: 8px 0 12px;">
-                🎧 DJとしても参加する（登録へ）
-            </a>
+                <div class="lobby-code-display" id="lobbyCodeDisplay">------</div>
+                <a href="dj-register.html" id="vdjRegisterLink" class="btn"
+                    style="width: 100%; display: inline-block; margin: 8px 0 12px;">
+                    🎧 DJとしても参加する（セットリスト登録へ）
+                </a>
 
-            <div style="margin: 15px 0; text-align: left;">
-                <label style="font-size: 0.8rem; color: var(--text-secondary);">連携済みDJセッション (<span
-                        id="lobbySessionCount">0</span>)</label>
-                <div id="lobbySessionList"
-                    style="max-height: 150px; overflow-y: auto; background: rgba(0,0,0,0.3); border-radius: 6px; padding: 6px; margin-top: 4px; min-height: 50px;">
-                    <div style="font-size: 0.8rem; color: #64748b; text-align: center; padding: 12px;"
-                        id="lobbyEmptyMsg">DJからの送信を待っています...</div>
+                <div style="margin: 15px 0; text-align: left;">
+                    <label style="font-size: 0.8rem; color: var(--text-secondary);">
+                        連携済みDJセッション (<span id="lobbySessionCount">0</span>)
+                    </label>
+                    <div id="lobbySessionList"
+                        style="max-height: 150px; overflow-y: auto; background: rgba(0,0,0,0.3); border-radius: 6px; padding: 6px; margin-top: 4px; min-height: 50px;">
+                        <div style="font-size: 0.8rem; color: #64748b; text-align: center; padding: 12px;"
+                            id="lobbyEmptyMsg">
+                            DJからの接続を待っています...
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <button type="button" class="btn btn-primary" id="enterVjModeBtn"
-                style="width: 100%; height: 48px; font-size: 1rem; margin-bottom: 15px;" disabled>
-                📺 VJモードを開始する
-            </button>
+                <button type="button" class="btn btn-primary" id="enterVjModeBtn"
+                    style="width: 100%; height: 48px; font-size: 1rem; margin-bottom: 15px;" disabled>
+                    📺 VJモードを開始する
+                </button>
             </div>
 
             <!-- 2. 直接ログインフォーム -->
             <div class="glass-panel hidden vj-entry-panel" id="directLoginForm">
-            <h2>VJ Direct Login</h2>
-            <form id="loginForm">
-                <div class="form-group">
-                    <label>閲覧許可パスワード</label>
-                    <input type="password" id="password" pattern="\d{4}" placeholder="数字4桁" required>
-                </div>
-                <button type="submit" class="btn btn-primary">ログイン</button>
-                <button type="button" class="btn" id="backToModeBtn" style="margin-top: 8px;">戻る</button>
-                <div id="loginError" style="color: var(--danger-color); margin-top: 10px; display: none;">パスワードが違います
-                </div>
-            </form>
+                <h2>VJ Direct Login</h2>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label>閲覧許可パスワード</label>
+                        <input type="password" id="password" pattern="\d{4}" placeholder="数字4桁" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">ログイン</button>
+                    <button type="button" class="btn" id="backToModeBtn" style="margin-top: 8px;">戻る</button>
+                    <div id="loginError" style="color: var(--danger-color); margin-top: 10px; display: none;">
+                        パスワードが違います
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -105,16 +112,17 @@
             <div class="panel-inner-stack">
                 <!-- 入れ替え：DJからSENDされた曲を上に -->
                 <div class="track-info-box send-track" id="sendTrackBox">
-                    <div class="label" id="sendTrackLabel">DJからSENDされた曲 (タップで検索窓にコピー)
+                    <div class="label" id="sendTrackLabel">
+                        DJからSENDされた曲 (タップで検索窓にコピー)
                         <span id="vjReadyBadge" class="badge-ready" style="display:none;">[VJ READY]</span>
                     </div>
                     <div class="track-title copyable" id="sendTitle" title="タップでコピー">-</div>
                     <div class="track-artist copyable" id="sendArtist" title="タップでコピー">-</div>
                 </div>
 
-                <!-- 入れ替え：プレイリスト上の次の曲を下に -->
+                <!-- 入れ替え：セットリスト上の次の曲を下に -->
                 <div class="track-info-box" id="nextTrackBox">
-                    <div class="label">プレイリスト上の次の曲 (Next in Playlist)</div>
+                    <div class="label">セットリスト上の次の曲 (Next in Setlist)</div>
                     <div class="track-title" id="nextTitle">-</div>
                     <div class="track-artist" id="nextArtist">-</div>
                 </div>
@@ -147,10 +155,10 @@
             </div>
         </div>
 
-        <!-- 下段：プレイリスト -->
+        <!-- 下段：セットリスト -->
         <div class="glass-panel playlist-section">
             <div class="section-header">
-                <h3>プレイリスト (DJ全体像)</h3>
+                <h3>セットリスト (DJ全体像)</h3>
             </div>
             <div class="playlist-container" id="playlistContainer">
                 <!-- JSで動的に追加 -->
@@ -168,7 +176,9 @@
                 <input type="text" id="modalUrlInput" placeholder="vj.html?sid=xxx"
                     style="padding: 8px; font-size: 0.85rem; width: 100%;">
                 <button type="button" class="btn btn-primary" id="modalAddByUrlBtn"
-                    style="margin-top: 6px; width: 100%; font-size: 0.85rem;">URLから追加</button>
+                    style="margin-top: 6px; width: 100%; font-size: 0.85rem;">
+                    URLから追加
+                </button>
             </div>
 
             <hr style="border-color: rgba(255,255,255,0.1); margin: 12px 0;">
@@ -180,11 +190,15 @@
                 <input type="password" id="modalVpInput" pattern="\d{4}" placeholder="VJ閲覧パスワード (4桁)"
                     style="padding: 6px; font-size: 0.85rem; width: 100%;">
                 <button type="button" class="btn" id="modalAddManualBtn"
-                    style="margin-top: 6px; width: 100%; font-size: 0.85rem;">手動入力で追加</button>
+                    style="margin-top: 6px; width: 100%; font-size: 0.85rem;">
+                    手動入力で追加
+                </button>
             </div>
 
             <button type="button" class="btn" id="modalCloseBtn"
-                style="width: 100%; font-size: 0.85rem; background: rgba(255,255,255,0.05);">キャンセル</button>
+                style="width: 100%; font-size: 0.85rem; background: rgba(255,255,255,0.05);">
+                キャンセル
+            </button>
         </div>
     </div>
 
