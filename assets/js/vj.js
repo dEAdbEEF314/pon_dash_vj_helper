@@ -436,7 +436,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     history.replaceState(null, '', cleanUrl.toString());
                 }
 
-                addSession(sid, vp, data, customDjName);
+                await addSession(sid, vp, data, customDjName);
                 
                 // 初回ログイン処理（UI切り替え）
                 if (loginScreen.classList.contains('hidden') === false && lobbyScreen.classList.contains('hidden') === true) {
@@ -771,15 +771,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             item.style.borderLeft = '';
             item.style.background = '';
 
-            if (i < nowPlayingIdx) item.classList.add('played');
-            if (i === nowPlayingIdx) item.style.borderLeft = '3px solid #fff';
+            if (nowPlayingIdx >= 0 && i < nowPlayingIdx) item.classList.add('played');
+            if (nowPlayingIdx >= 0 && i === nowPlayingIdx) item.style.borderLeft = '3px solid #fff';
             if (i === sentIdx) {
                 item.style.borderLeft = '3px solid var(--danger-color, #ff3366)';
                 item.style.background = 'rgba(255, 51, 102, 0.1)';
             }
         }
 
-        const activeIdx = sentIdx !== -1 ? sentIdx : nowPlayingIdx;
+        const activeIdx = sentIdx >= 0 ? sentIdx : Math.max(0, nowPlayingIdx);
         const activeItem = playlistContainer.children[activeIdx];
         if (activeItem) {
             const itemTop = activeItem.offsetTop;
@@ -829,7 +829,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Vibes! バッジ表示制御
         let vibesBadge = document.getElementById('vjVibesBadge');
-        if (customTrack && (sentIdx === -2 || customTrack.isVibes)) {
+        const hasCustomTrack = Boolean(customTrack && (sentIdx === -2 || customTrack.isVibes));
+
+        if (hasCustomTrack) {
             if (!vibesBadge && sendLabelEl) {
                 vibesBadge = document.createElement('span');
                 vibesBadge.id = 'vjVibesBadge';
@@ -843,8 +845,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             applyMarquee(sendArtistEl, customTrack.artist);
         } else {
             if (vibesBadge) vibesBadge.style.display = 'none';
-            const targetSentIdx = (sentIdx >= 0) ? sentIdx : 0;
-            const sentTrack = tracks[targetSentIdx];
+            const sentTrack = (sentIdx >= 0) ? tracks[sentIdx] : null;
             if (sentTrack) {
                 applyMarquee(sendTitleEl, sentTrack.title);
                 applyMarquee(sendArtistEl, sentTrack.artist);
@@ -855,19 +856,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // プレイリスト上の次の曲 (Next in Playlist)
-        // 手入力 (sentIdx === -2) の場合でも、進行中・直前の nowPlayingIdx + 1 の予定曲を維持
-        let nextIdx = (sentIdx >= 0) ? sentIdx + 1 : nowPlayingIdx + 1;
-        const nextTrack = tracks[nextIdx];
         const nextTitleEl = document.getElementById('nextTitle');
         const nextArtistEl = document.getElementById('nextArtist');
 
         if (nextTitleEl && nextArtistEl) {
-            if (nextTrack) {
-                applyMarquee(nextTitleEl, nextTrack.title);
-                applyMarquee(nextArtistEl, nextTrack.artist);
-            } else {
-                applyMarquee(nextTitleEl, "(end of playlist)");
+            const hasSent = (sentIdx >= 0) || hasCustomTrack;
+            if (!hasSent) {
+                // 1度も何もSENDされていない初期状態では、SENDされた曲・次の曲ともにブランク ("-")
+                applyMarquee(nextTitleEl, "-");
                 applyMarquee(nextArtistEl, "-");
+            } else {
+                let nextIdx;
+                if (sentIdx >= 0) {
+                    nextIdx = sentIdx + 1;
+                } else {
+                    // 手入力 (sentIdx === -2) の場合
+                    // セットリスト曲が再生中 (nowPlayingIdx >= 0) ならその次、未送信ならセットリストの1曲目 (0)
+                    nextIdx = (nowPlayingIdx >= 0) ? nowPlayingIdx + 1 : 0;
+                }
+
+                const nextTrack = tracks[nextIdx];
+                if (nextTrack) {
+                    applyMarquee(nextTitleEl, nextTrack.title);
+                    applyMarquee(nextArtistEl, nextTrack.artist);
+                } else {
+                    applyMarquee(nextTitleEl, "(end of playlist)");
+                    applyMarquee(nextArtistEl, "-");
+                }
             }
         }
     }

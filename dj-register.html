@@ -112,16 +112,28 @@
                 </div>
 
                 <div style="margin-top: 20px;">
+                    <h3 style="font-size: 1rem; margin-top: 0;">② VJ用 閲覧URL (手動共有)</h3>
+                    <p style="font-size: 0.8rem; margin-bottom: 8px;">※URLを開いた後、登録時のVJ用パスワードを入力してください</p>
+                    <div class="url-box" id="vjUrlBox"></div>
+                    <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+                        <button type="button" id="shareVjUrlBtn" class="btn btn-primary" style="flex: 1;">📤
+                            VJ用URLを共有 /
+                            コピー</button>
+                    </div>
+                    <div id="vjQrcode" style="margin-top: 10px; margin-bottom: 15px; text-align: center;"></div>
+                    <a href="#" id="vjLink" class="btn" target="_blank" rel="noopener noreferrer">VJページを別タブで開く</a>
                 </div>
 
             </div>
-            <!-- QRコード生成ライブラリ (SRI: M-4) -->
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
-                integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU"
-                crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-            <script src="assets/js/config.js"></script>
-            <script src="assets/js/parser.js"></script>
-            <script src="assets/js/register.js"></script>
+        </div>
+    </div>
+    <!-- QRコード生成ライブラリ (SRI: M-4) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
+        integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU"
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/parser.js"></script>
+    <script src="assets/js/register.js"></script>
 </body>
 
 </html>

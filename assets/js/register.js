@@ -103,11 +103,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 // VJ用URLには認証情報を含めず、VJ側でパスワードを入力する
                 const vjUrl = `${baseUrl}vj.html?sid=${result.sessionId}`;
 
-                document.getElementById('djUrlBox').textContent = djUrl;
-                document.getElementById('vjUrlBox').textContent = vjUrl;
+                const djUrlBox = document.getElementById('djUrlBox');
+                if (djUrlBox) djUrlBox.textContent = djUrl;
+
+                const vjUrlBox = document.getElementById('vjUrlBox');
+                if (vjUrlBox) vjUrlBox.textContent = vjUrl;
                 
-                document.getElementById('djLink').href = djUrl;
-                document.getElementById('vjLink').href = vjUrl;
+                const djLink = document.getElementById('djLink');
+                if (djLink) djLink.href = djUrl;
+
+                const vjLink = document.getElementById('vjLink');
+                if (vjLink) vjLink.href = vjUrl;
 
                 // QRコード表示領域の取得と初期化（複数回登録時の増殖防止とキャッシュ対策）
                 const djQrcodeEl = document.getElementById("djQrcode");

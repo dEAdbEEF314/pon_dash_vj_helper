@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     let state = {
         tracks: [],
-        nowPlayingIdx: 0,
+        nowPlayingIdx: -1,
         selectedIdx: -1,
         sentIdx: -1,
         customTrack: null,
@@ -257,12 +257,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         for (let i = 0; i < playlistContainer.children.length; i++) {
             const item = playlistContainer.children[i];
             item.className = 'playlist-item';
-            if (i < state.nowPlayingIdx) item.classList.add('played');
+            if (state.nowPlayingIdx >= 0 && i < state.nowPlayingIdx) item.classList.add('played');
             if (i === state.selectedIdx) item.classList.add('selected');
         }
 
         // スクロール位置の自動調整（現在再生中へ、コンテナ外部スクロール防止）
-        const activeItem = playlistContainer.children[state.nowPlayingIdx];
+        const activeIdx = state.nowPlayingIdx >= 0 ? state.nowPlayingIdx : 0;
+        const activeItem = playlistContainer.children[activeIdx];
         if (activeItem) {
             const itemTop = activeItem.offsetTop;
             const itemHeight = activeItem.offsetHeight;
@@ -302,7 +303,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 3. SEND to VJ (Preview) - タップされた曲のみ表示、未選択時は次に送信予定の曲（初回アクセス時は1曲目）
         const previewTitleEl = document.getElementById('previewTitle');
         const previewArtistEl = document.getElementById('previewArtist');
-        const defaultNextIdx = (state.sentIdx === -1) ? 0 : state.nowPlayingIdx + 1;
+        const defaultNextIdx = (state.sentIdx === -1) ? 0 : (state.nowPlayingIdx >= 0 ? state.nowPlayingIdx + 1 : 0);
         const nextPlaylistTrack = state.tracks[defaultNextIdx];
         if (state.selectedIdx !== -1) {
             const previewTrack = state.tracks[state.selectedIdx];
@@ -503,7 +504,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let sendInFlight = false;
     sendBtn.addEventListener('click', async () => {
         if (sendInFlight) return;
-        const targetIdx = state.selectedIdx !== -1 ? state.selectedIdx : (state.sentIdx === -1 ? 0 : state.nowPlayingIdx + 1);
+        const targetIdx = state.selectedIdx !== -1 ? state.selectedIdx : ((state.sentIdx === -1) ? 0 : (state.nowPlayingIdx >= 0 ? state.nowPlayingIdx + 1 : 0));
         if (targetIdx >= state.tracks.length) {
             alert("次に送信する曲がありません。");
             return;
