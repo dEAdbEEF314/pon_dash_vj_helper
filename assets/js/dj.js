@@ -279,7 +279,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     function applyMarquee(el, text) {
         if (!el) return;
         const normalizedText = String(text ?? '');
-        if (el.dataset.lastMarqueeText === normalizedText) return;
+        if (el.dataset.lastMarqueeText === normalizedText && el.textContent === normalizedText) return;
         el.dataset.lastMarqueeText = normalizedText;
 
         el.textContent = normalizedText;

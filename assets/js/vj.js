@@ -601,6 +601,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             const nextSid = Array.from(sessions.keys())[0];
             switchSession(nextSid);
         } else {
+            // 全セッション削除時は表示と差分キャッシュをブランクにリセット
+            lastRenderedSessionId = null;
+            lastRenderedTrackCount = -1;
+            lastRenderedSessionKeys = '';
+            if (playlistContainer) playlistContainer.innerHTML = '';
+            
+            const sendTitleEl = document.getElementById('sendTitle');
+            const sendArtistEl = document.getElementById('sendArtist');
+            const nextTitleEl = document.getElementById('nextTitle');
+            const nextArtistEl = document.getElementById('nextArtist');
+            if (sendTitleEl) applyMarquee(sendTitleEl, '-');
+            if (sendArtistEl) applyMarquee(sendArtistEl, '-');
+            if (nextTitleEl) applyMarquee(nextTitleEl, '-');
+            if (nextArtistEl) applyMarquee(nextArtistEl, '-');
+
             mainApp.classList.add('hidden');
             loginScreen.classList.remove('hidden');
             modeSelectPanel.classList.remove('hidden');
@@ -795,7 +810,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     function applyMarquee(el, text) {
         if (!el) return;
         const normalizedText = String(text ?? '');
-        if (el.dataset.lastMarqueeText === normalizedText) return;
+        if (el.dataset.lastMarqueeText === normalizedText && el.textContent === normalizedText) return;
         el.dataset.lastMarqueeText = normalizedText;
 
         el.textContent = normalizedText;
