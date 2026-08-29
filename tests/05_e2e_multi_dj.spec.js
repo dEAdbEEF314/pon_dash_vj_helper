@@ -82,6 +82,10 @@ test.describe('E2E Test: One VJ and Multiple DJs with Recovery', () => {
             await vjPage.waitForSelector('#mainApp', { state: 'visible' });
             await expect(vjPage.locator('#sessionTabBar .session-tab')).toHaveCount(3);
 
+            // 未SENDの初期状態では、SENDされた曲・次の曲ともに "-" (ブランク)
+            await expect(vjPage.locator('#sendTitle')).toHaveText('-');
+            await expect(vjPage.locator('#nextTitle')).toHaveText('-');
+
             const djUrls = await Promise.all(djPages.map(async page => (await page.textContent('#djUrlBox')).trim()));
             await Promise.all(djPages.map(async (page, index) => {
                 await page.goto(djUrls[index]);

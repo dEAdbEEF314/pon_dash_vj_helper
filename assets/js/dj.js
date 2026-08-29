@@ -343,12 +343,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (vjSearchArtistEl) applyMarquee(vjSearchArtistEl, state.customTrack.artist);
         } else {
             if (vibesBadge) vibesBadge.style.display = 'none';
-            const sentTrack = state.tracks[state.sentIdx];
+            const validSentIdx = (typeof state.sentIdx === 'number' && Number.isInteger(state.sentIdx) && state.sentIdx >= 0) ? state.sentIdx : -1;
+            const sentTrack = (validSentIdx >= 0 && Array.isArray(state.tracks)) ? state.tracks[validSentIdx] : null;
             if (sentTrack) {
-                applyMarquee(sendTitleEl, sentTrack.title);
-                applyMarquee(sendArtistEl, sentTrack.artist);
-                if (vjSearchTitleEl) applyMarquee(vjSearchTitleEl, sentTrack.title);
-                if (vjSearchArtistEl) applyMarquee(vjSearchArtistEl, sentTrack.artist);
+                applyMarquee(sendTitleEl, sentTrack.title || "-");
+                applyMarquee(sendArtistEl, sentTrack.artist || "-");
+                if (vjSearchTitleEl) applyMarquee(vjSearchTitleEl, sentTrack.title || "-");
+                if (vjSearchArtistEl) applyMarquee(vjSearchArtistEl, sentTrack.artist || "-");
             } else {
                 applyMarquee(sendTitleEl, "-");
                 applyMarquee(sendArtistEl, "-");

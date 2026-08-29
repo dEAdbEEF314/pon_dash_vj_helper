@@ -827,9 +827,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const sendTrackBox = document.getElementById('sendTrackBox');
         const sendLabelEl = sendTrackBox ? sendTrackBox.querySelector('.label') : null;
 
+        // 型安全なインデックス判定（null >= 0 等の誤判定を完全に防止）
+        const validSentIdx = (typeof sentIdx === 'number' && Number.isInteger(sentIdx) && sentIdx >= 0) ? sentIdx : -1;
+        const hasCustomTrack = Boolean(customTrack && (sentIdx === -2 || customTrack.isVibes));
+
         // Vibes! バッジ表示制御
         let vibesBadge = document.getElementById('vjVibesBadge');
-        const hasCustomTrack = Boolean(customTrack && (sentIdx === -2 || customTrack.isVibes));
 
         if (hasCustomTrack) {
             if (!vibesBadge && sendLabelEl) {
@@ -841,14 +844,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             if (vibesBadge) vibesBadge.style.display = 'inline-block';
 
-            applyMarquee(sendTitleEl, customTrack.title);
-            applyMarquee(sendArtistEl, customTrack.artist);
+            applyMarquee(sendTitleEl, customTrack.title || "-");
+            applyMarquee(sendArtistEl, customTrack.artist || "-");
         } else {
             if (vibesBadge) vibesBadge.style.display = 'none';
-            const sentTrack = (sentIdx >= 0) ? tracks[sentIdx] : null;
+            const sentTrack = (validSentIdx >= 0 && Array.isArray(tracks)) ? tracks[validSentIdx] : null;
             if (sentTrack) {
-                applyMarquee(sendTitleEl, sentTrack.title);
-                applyMarquee(sendArtistEl, sentTrack.artist);
+                applyMarquee(sendTitleEl, sentTrack.title || "-");
+                applyMarquee(sendArtistEl, sentTrack.artist || "-");
             } else {
                 applyMarquee(sendTitleEl, "-");
                 applyMarquee(sendArtistEl, "-");
@@ -860,25 +863,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         const nextArtistEl = document.getElementById('nextArtist');
 
         if (nextTitleEl && nextArtistEl) {
-            const hasSent = (sentIdx >= 0) || hasCustomTrack;
+            const hasSent = (validSentIdx >= 0) || hasCustomTrack;
             if (!hasSent) {
                 // 1度も何もSENDされていない初期状態では、SENDされた曲・次の曲ともにブランク ("-")
                 applyMarquee(nextTitleEl, "-");
                 applyMarquee(nextArtistEl, "-");
             } else {
                 let nextIdx;
-                if (sentIdx >= 0) {
-                    nextIdx = sentIdx + 1;
+                if (validSentIdx >= 0) {
+                    nextIdx = validSentIdx + 1;
                 } else {
                     // 手入力 (sentIdx === -2) の場合
                     // セットリスト曲が再生中 (nowPlayingIdx >= 0) ならその次、未送信ならセットリストの1曲目 (0)
-                    nextIdx = (nowPlayingIdx >= 0) ? nowPlayingIdx + 1 : 0;
+                    const isNowPlayingValid = (typeof nowPlayingIdx === 'number' && Number.isInteger(nowPlayingIdx) && nowPlayingIdx >= 0);
+                    nextIdx = isNowPlayingValid ? nowPlayingIdx + 1 : 0;
                 }
 
-                const nextTrack = tracks[nextIdx];
+                const nextTrack = (Array.isArray(tracks) && nextIdx >= 0) ? tracks[nextIdx] : null;
                 if (nextTrack) {
-                    applyMarquee(nextTitleEl, nextTrack.title);
-                    applyMarquee(nextArtistEl, nextTrack.artist);
+                    applyMarquee(nextTitleEl, nextTrack.title || "-");
+                    applyMarquee(nextArtistEl, nextTrack.artist || "-");
                 } else {
                     applyMarquee(nextTitleEl, "(end of playlist)");
                     applyMarquee(nextArtistEl, "-");
