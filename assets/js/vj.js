@@ -37,9 +37,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // モーダル要素
     const addSessionModal = document.getElementById('addSessionModal');
-    const modalUrlInput = document.getElementById('modalUrlInput');
-    const modalSidInput = document.getElementById('modalSidInput');
+    const modalSessionInput = document.getElementById('modalSessionInput');
     const modalVpInput = document.getElementById('modalVpInput');
+    const modalAddSessionBtn = document.getElementById('modalAddSessionBtn');
     
     // データ構造
     let pusherInstance = null;
@@ -530,6 +530,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 if (data.stateVersion <= currentVersion) return;
                 if (data.stateVersion !== currentVersion + 1) {
+                    if (activeSessionId !== sessionId) {
+                        sessionObj.hasUnread = true;
+                        renderSessionTabs();
+                    }
                     syncVjSession(sessionObj);
                     return;
                 }
@@ -583,6 +587,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderSessionTabs();
         renderPlaylist();
         updateDisplay();
+        if (current.syncRetryOnReconnect) {
+            current.syncRetryOnReconnect = false;
+            syncVjSession(current);
+        }
     }
 
     function removeSessionLocally(sessionId) {
@@ -980,50 +988,76 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 8. モーダルダイアログ (手動セッション追加)
     // ----------------------------------------------------
     function openAddSessionModal() {
-        modalUrlInput.value = '';
-        modalSidInput.value = '';
+        modalSessionInput.value = '';
         modalVpInput.value = '';
         addSessionModal.classList.remove('hidden');
+        modalSessionInput.focus();
     }
 
     document.getElementById('modalCloseBtn').addEventListener('click', () => {
         addSessionModal.classList.add('hidden');
     });
 
-    document.getElementById('modalAddByUrlBtn').addEventListener('click', async () => {
-        const rawUrl = modalUrlInput.value.trim();
-        const parsed = parseVjUrl(rawUrl);
+    async function handleAddSession() {
+        const rawInput = modalSessionInput.value.trim();
+        const sid = extractSessionId(rawInput);
         const vp = modalVpInput.value.trim();
-        if (!parsed || !parsed.sid || !vp) {
-            alert("VJ用URLをペーストし、VJ用パスワードを手動入力してください。");
+
+        if (!sid) {
+            alert("VJ用URLまたはセッションIDを入力してください。");
+            modalSessionInput.focus();
             return;
         }
-        await autoLogin(parsed.sid, vp);
-        addSessionModal.classList.add('hidden');
-    });
-
-    document.getElementById('modalAddManualBtn').addEventListener('click', async () => {
-        const sid = modalSidInput.value.trim();
-        const vp = modalVpInput.value.trim();
-        if (!sid || !vp) {
-            alert("セッションIDとパスワードの両方を入力してください。");
+        if (!vp) {
+            alert("VJ閲覧パスワード(4桁)を入力してください。");
+            modalVpInput.focus();
             return;
         }
         await autoLogin(sid, vp);
         addSessionModal.classList.add('hidden');
+    }
+
+    if (modalAddSessionBtn) {
+        modalAddSessionBtn.addEventListener('click', handleAddSession);
+    }
+
+    modalSessionInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            modalVpInput.focus();
+        }
+    });
+
+    modalVpInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleAddSession();
+        }
     });
 
     // ----------------------------------------------------
     // 9. ユーティリティ関数
     // ----------------------------------------------------
-    function parseVjUrl(urlStr) {
+    function extractSessionId(inputStr) {
+        if (!inputStr) return '';
+        const trimmed = inputStr.trim();
         try {
-            const url = new URL(urlStr, window.location.origin);
+            const url = new URL(trimmed, window.location.origin);
             const sid = url.searchParams.get('sid');
-            return { sid };
-        } catch(e) {
-            return null;
+            if (sid) return sid.trim();
+        } catch(e) {}
+
+        const match = trimmed.match(/(?:^|[?&])sid=([^&#\s]+)/);
+        if (match && match[1]) {
+            return match[1].trim();
         }
+
+        return trimmed;
+    }
+
+    function parseVjUrl(urlStr) {
+        const sid = extractSessionId(urlStr);
+        return sid ? { sid } : null;
     }
 
     function escapeHtml(str) {
@@ -1052,10 +1086,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (previousVersion !== sessionObj.state.stateVersion) {
                 sessionObj.state.vjReady = false;
                 sessionObj.state.readyForVersion = null;
-            }
-            if (activeSessionId === sessionObj.sessionId) {
-                renderPlaylist();
-                updateDisplay();
+                if (activeSessionId === sessionObj.sessionId) {
+                    renderPlaylist();
+                    updateDisplay();
+                } else {
+                    sessionObj.hasUnread = true;
+                    renderSessionTabs();
+                }
             }
         } catch (error) {
             console.warn('VJ状態同期に失敗しました', error);

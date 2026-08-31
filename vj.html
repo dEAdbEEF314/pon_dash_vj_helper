@@ -36,7 +36,7 @@
                 <p style="font-size: 0.85rem; margin-bottom: 20px; color: var(--text-secondary);">モードを選択してください</p>
                 <button type="button" class="btn btn-primary" id="startLobbyBtn"
                     style="width: 100%; height: 50px; font-size: 1.1rem; margin-bottom: 12px;">
-                    📡 VJロビーを開く (通常はこちら)
+                    📡 VJロビーを開く
                 </button>
                 <p style="font-size: 0.75rem; color: #00ffcc; margin-bottom: 15px;">※DJにコードを伝えて、ロビーへしてもらいましょう</p>
                 <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
@@ -172,28 +172,21 @@
             <h3 style="margin-top: 0; font-size: 1rem;">セッションを追加</h3>
 
             <div class="form-group" style="margin-bottom: 12px;">
-                <label style="font-size: 0.8rem;">① VJ用URLをペースト</label>
-                <input type="text" id="modalUrlInput" placeholder="vj.html?sid=xxx"
+                <label for="modalSessionInput" style="font-size: 0.8rem; display: block; margin-bottom: 4px;">VJ用URL または セッションID</label>
+                <input type="text" id="modalSessionInput" placeholder="vj.html?sid=xxx または sid"
                     style="padding: 8px; font-size: 0.85rem; width: 100%;">
-                <button type="button" class="btn btn-primary" id="modalAddByUrlBtn"
-                    style="margin-top: 6px; width: 100%; font-size: 0.85rem;">
-                    URLから追加
-                </button>
             </div>
 
-            <hr style="border-color: rgba(255,255,255,0.1); margin: 12px 0;">
-
-            <div class="form-group" style="margin-bottom: 12px;">
-                <label style="font-size: 0.8rem;">② または手動入力</label>
-                <input type="text" id="modalSidInput" placeholder="セッションID (sid)"
-                    style="padding: 6px; font-size: 0.85rem; width: 100%; margin-bottom: 6px;">
-                <input type="password" id="modalVpInput" pattern="\d{4}" placeholder="VJ閲覧パスワード (4桁)"
-                    style="padding: 6px; font-size: 0.85rem; width: 100%;">
-                <button type="button" class="btn" id="modalAddManualBtn"
-                    style="margin-top: 6px; width: 100%; font-size: 0.85rem;">
-                    手動入力で追加
-                </button>
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label for="modalVpInput" style="font-size: 0.8rem; display: block; margin-bottom: 4px;">VJ閲覧パスワード (4桁)</label>
+                <input type="password" id="modalVpInput" pattern="\d{4}" maxlength="4" placeholder="4桁の数字"
+                    style="padding: 8px; font-size: 0.85rem; width: 100%;">
             </div>
+
+            <button type="button" class="btn btn-primary" id="modalAddSessionBtn"
+                style="width: 100%; font-size: 0.85rem; margin-bottom: 8px;">
+                追加
+            </button>
 
             <button type="button" class="btn" id="modalCloseBtn"
                 style="width: 100%; font-size: 0.85rem; background: rgba(255,255,255,0.05);">
@@ -206,7 +199,7 @@
     <!-- SRIハッシュ生成: openssl dgst -sha384 -binary pusher.min.js | openssl base64 -A -->
     <script src="https://js.pusher.com/8.2.0/pusher.min.js" crossorigin="anonymous"></script>
     <script src="assets/js/config.js?v=20260830_2"></script>
-    <script src="assets/js/vj.js?v=20260830_2"></script>
+    <script src="assets/js/vj.js?v=20260831_2"></script>
 </body>
 
 </html>

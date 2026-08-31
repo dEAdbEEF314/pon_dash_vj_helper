@@ -71,7 +71,7 @@
                 <ol>
                     <li>VJからロビーコードを受け取ります。</li>
                     <li>登録完了画面のロビーコード欄に10文字のコードを入力します。</li>
-                    <li><span class="manual-kbd">VJロビーへ送信</span>を押します。</li>
+                    <li><span class="manual-kbd">送信</span>を押します。</li>
                 </ol>
                 <p>VJ側のロビーにセッション名が表示されたら連携完了です。URLやパスワードは、必要な相手にだけ共有してください。</p>
             </div>
@@ -84,13 +84,14 @@
         <section class="manual-step" id="send">
             <div>
                 <h2><span class="manual-step-number">3</span>DJ操作画面を使う</h2>
-                <p>ログイン後の画面は、上から「VJにSENDした曲」「VJにSENDする曲」、送信ボタン、プレイリストの順です。現在の画面では、不要な「次にかける曲」専用表示はありません。</p>
+                <p>ログイン後の画面は、上から「VJにSENDした曲」「VJにSENDする曲」、送信ボタンとVIBES!ボタン、プレイリストの順です。</p>
                 <ol>
                     <li>プレイリストの曲をタップして、<span class="manual-kbd">VJにSENDする曲</span>へセットします。</li>
                     <li>選択内容を確認します。</li>
                     <li><span class="manual-kbd">SEND TO VJ</span>を押します。</li>
+                    <li>SENDすると、セットリストの次の曲が自動的に<span class="manual-kbd">VJにSENDする曲</span>にセットされます。</li>
                 </ol>
-                <p>プレイリストの曲名・アーティスト名は折り返さず、長い場合は表示領域内を横スクロールして確認します。</p>
+                <p>プレイリストの長い曲名やアーティスト名は、表示領域内を横スクロールして確認できます。</p>
             </div>
             <figure class="manual-figure">
                 <img src="pics/dj-03-main.png" alt="実プレイリストを読み込んだDJ操作画面">
@@ -152,9 +153,9 @@
             <h2><span class="manual-step-number">7</span>セッションを削除・復帰する</h2>
             <p>セッションを終了する場合は、DJ画面ヘッダー右上の <span class="manual-kbd">このセッションを削除</span>
                 を使います。サーバー上のセッション、プレイリスト、ロビー参照が削除されるため、開催中は押さないでください。</p>
-            <p>同じブラウザではセッションIDが<strong>8時間以内</strong>保存され、URLを失ってもパスワード再入力で復帰できます。パスワードや認証トークンは保存されません。</p>
+            <p>同じブラウザではセッションIDが<strong>8時間</strong>保存され、URLを失ってもパスワード再入力で復帰できます。パスワードや認証トークンは保存されません。</p>
             <figure class="manual-figure">
-                <img src="pics/dj-07-after-send.png" alt="実画面の送信後DJ操作画面">
+                <img src="pics/dj-07-after-send.png" alt="セッション削除とログアウトボタン">
                 <figcaption>図7: SEND後は送信済み曲と次の送信対象が更新されます。</figcaption>
             </figure>
         </section>
@@ -186,12 +187,6 @@
             </div>
         </section>
 
-        <p class="manual-footer">
-            画面例は Docker + Playwright のビジュアルテストで取得したものを、説明に必要な範囲へ切り出しています。
-            アプリ本体: <a href="index.html">index.html</a> / <a href="dj-register.html">dj-register.html</a> / <a
-                href="dj.html">dj.html</a> / <a href="vj.html">vj.html</a>
-            　仕様: <a href="docs/PDVH.md">PDVH.md</a>
-        </p>
     </main>
 </body>
 

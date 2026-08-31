@@ -110,6 +110,23 @@ test.describe('E2E Test: One VJ and Multiple DJs with Recovery', () => {
             await djPages[1].click('#sendBtn');
             await expect(betaTab.locator('.badge-unread')).toBeVisible({ timeout: 15000 });
 
+            // 非アクティブDJからのVIBES!送信も未読バッジとして通知され、タブ切替で内容が表示される。
+            const gammaTab = vjPage.locator('#sessionTabBar .session-tab', { hasText: 'MULTI_DJ_3' });
+            await djPages[2].click('#openVibesModalBtn');
+            await djPages[2].waitForSelector('#vibesModalOverlay.active', { state: 'visible' });
+            await djPages[2].fill('#vibesTitleInput', 'SPECIAL VIBES TRACK');
+            await djPages[2].fill('#vibesArtistInput', 'SPECIAL ARTIST');
+            await djPages[2].click('#sendVibesBtn');
+            await expect(gammaTab.locator('.badge-unread')).toBeVisible({ timeout: 15000 });
+
+            await gammaTab.click();
+            await expect(vjPage.locator('#vjVibesBadge')).toBeVisible({ timeout: 5000 });
+            await expect(vjPage.locator('#sendTitle')).toContainText('SPECIAL VIBES TRACK');
+            await expect(vjPage.locator('#sendArtist')).toContainText('SPECIAL ARTIST');
+
+            // 再び MULTI_DJ_1 に戻す
+            await vjPage.locator('#sessionTabBar .session-tab', { hasText: 'MULTI_DJ_1' }).click();
+
             // VJ側でDJ 2セッションを削除する。
             await vjPage.once('dialog', dialog => dialog.accept());
             await vjPage.locator('#sessionTabBar .session-tab', { hasText: 'MULTI_DJ_2' }).locator('.close-btn').click();
@@ -138,11 +155,10 @@ test.describe('E2E Test: One VJ and Multiple DJs with Recovery', () => {
             await vjPage.fill('#password', '4299');
             await vjPage.click('#directLoginForm button[type="submit"]');
             await vjPage.waitForSelector('#mainApp', { state: 'visible', timeout: 15000 });
-            await expect(vjPage.locator('#sessionTabBar .session-tab')).toHaveCount(1);
             await vjPage.click('#addSessionBtn');
-            await vjPage.fill('#modalSidInput', savedVjSessions[1].sessionId);
+            await vjPage.fill('#modalSessionInput', `${host}/vj.html?sid=${savedVjSessions[1].sessionId}`);
             await vjPage.fill('#modalVpInput', '4299');
-            await vjPage.click('#modalAddManualBtn');
+            await vjPage.click('#modalAddSessionBtn');
             await expect(vjPage.locator('#sessionTabBar .session-tab')).toHaveCount(2, { timeout: 15000 });
 
             // VJブラウザを閉じてもセッションはサーバー上に残り、新しいブラウザで再認証できる。
@@ -166,9 +182,9 @@ test.describe('E2E Test: One VJ and Multiple DJs with Recovery', () => {
             await recoveredVjPage.waitForSelector('#mainApp', { state: 'visible', timeout: 15000 });
             await expect(recoveredVjPage.locator('#sessionTabBar .session-tab')).toHaveCount(1);
             await recoveredVjPage.click('#addSessionBtn');
-            await recoveredVjPage.fill('#modalSidInput', savedVjSessions[1].sessionId);
+            await recoveredVjPage.fill('#modalSessionInput', savedVjSessions[1].sessionId);
             await recoveredVjPage.fill('#modalVpInput', '4299');
-            await recoveredVjPage.click('#modalAddManualBtn');
+            await recoveredVjPage.click('#modalAddSessionBtn');
             await expect(recoveredVjPage.locator('#sessionTabBar .session-tab')).toHaveCount(2, { timeout: 15000 });
             await recoveredVjContext.close();
         } finally {
