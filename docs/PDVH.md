@@ -16,7 +16,8 @@
 ```
 +-----------------------------------------------------------------------+
 |                             フロントエンド                             |
-|  - index.html (事前登録) / dj.html (DJ画面) / vj.html (VJ画面)           |
+|  - index.html (案内所) / dj-register.html (DJ事前登録)                 |
+|  - dj.html (DJ画面) / vj.html (VJロビー・VJ画面) / *-manual.html (説明書) |
 |  - Vanilla HTML5 / Vanilla CSS3 (Glassmorphism, Neon Theme)           |
 |  - Vanilla JavaScript (ES6+, Pusher JS SDK)                            |
 +-----------------------------------------------------------------------+
@@ -48,13 +49,16 @@
 
 ## 3. 画面仕様 ＆ 機能詳細
 
-### 3.1 事前登録画面 (`index.html` / `register.js`)
+### 3.0 案内所 (`index.html`)
+アプリの概要・利用シーンと、DJ / VJ / VDJ 各役割への入口、説明書 (`dj-manual.html` / `vj-manual.html`) へのリンクをまとめたトップページです。
+
+### 3.1 DJ事前登録画面 (`dj-register.html` / `register.js` / `parser.js`)
 DJがセッションを開始するための事前設定画面です。
 - **入力項目**:
-  - セッション名 (DJ名 / イベント名等)
-  - 操作用パスワード (DJ/VJ画面アクセス用)
-  - プレイリスト入力: Rekordbox, djay 等からエクスポートした m3u8 / XML / CSV / TXT ファイルのアップロード。
-  - VJロビーコード (任意・10文字): VJが作成したロビーコードを入力することで自動連携。
+  - アカウント名 (DJ名等 / 半角英数字・`_`・`-` のみ、最大100文字)
+  - DJパスワード / VJパスワード (それぞれ**数字4桁**。DJ画面・VJ画面のログインに使用)
+  - プレイリスト入力: Rekordbox, Serato, djay, VirtualDJ 等からエクスポートした M3U / M3U8 / XML (Rekordbox) / CSV / TXT ファイルのアップロード (最大500曲)。
+  - VJロビーコード (任意・10文字): **登録完了画面**で入力し「送信」を押すと、VJロビーへセッションが追加される (`action=push_to_lobby`)。`dj-register.html?lobby={コード}` で開いた場合 (VDJフロー) は自動入力される。
 
 - **機能**:
   - プレイリスト構文解析 (`parser.js`): トラック番号、曲名、アーティスト名を自動抽出。
@@ -66,9 +70,11 @@ DJがセッションを開始するための事前設定画面です。
 ### 3.2 DJ操作画面 (`dj.html` / `dj.js`)
 DJブースでの片手操作・高視認性を追求したUI。
 - **画面構成**:
-  - **SEND TO VJ ボタン (割合: 70%)**: 選択中トラックをVJへワンタップ送信。送信後、「VJにSENDする曲」にプレイリストの次の曲が自動的にセット。送信時には**画面全体が5秒間フラッシュ**。
-  - **VIBES! ボタン (割合: 30%)**: モーダルを開き、プレイリスト外の割込み曲を手入力送信。
-  - **VJに通知した曲エリア / READY受信**: VJが「READY」を押すと**DJ/VJそれぞれの画面全体が5秒間フラッシュ**し、「VJにSENDした曲」エリアが白文字赤背景（白文字黒角丸背景の `[VJ READY]` バッジ付き）に強調更新。
+  - **SEND TO VJ ボタン (割合: 70%)**: 選択中トラックをVJへワンタップ送信。送信後、「VJにSENDする曲」にプレイリストの次の曲が自動的にセット。送信時には**画面全体が3秒間フラッシュ**（黒→青→白→青→黒を3回）。
+  - **VIBES! ボタン (割合: 30%)**: モーダルを開き、プレイリスト外の割込み曲を手入力送信（`action=send` に `customTrack` を付与。プレイリストの進行位置は変更しない）。
+  - **VJに通知した曲エリア / READY受信**: VJが「READY」を押すと**DJ/VJそれぞれの画面全体が3秒間フラッシュ**し、約5秒後に「VJにSENDした曲」エリアが白文字赤背景（白文字黒角丸背景の `[VJ READY]` バッジ付き）に強調更新。READY受信後に新たなSENDが行われた場合、強調は適用しない。
+  - **VJ検索タブ**: VJ画面と同じ素材検索ボックス・外部検索ボタンを利用可能（VDJ向け）。
+  - **削除ボタン**: 認証済みDJがサーバー上のセッションを手動削除。
   - **プレイリスト表示エリア**: トラック一覧のタップ選択、現在送信中曲のハイライト。
 
 ### 3.3 VJ操作画面 / VJロビー (`vj.html` / `vj.js`)
@@ -81,13 +87,16 @@ VJの素材検索と進捗管理を最大効率化するUI。
   - Pusher通知と30秒間隔ポーリングの重複受信に備え、セッションID単位の処理中ロックを使用し、同一セッションのログイン処理を同時実行しない。
   - DJセッションの認証・登録処理が完了してから一覧、件数、VJモード開始ボタンを更新する。
 - **受信 ＆ フラッシュ通知**:
-  - DJがSENDした曲を受信すると、「DJからSENDされた曲」エリアが更新され、**画面全体が5秒間フラッシュ（イエロー/ピンク等）**。
+  - DJがSENDした曲を受信すると、「DJからSENDされた曲」エリアが更新され、**画面全体が3秒間フラッシュ（黒→青→白→青→黒を3回）**。
   - 手入力曲には **`[VIBES!]`** バッジを自動付与。
+  - 表示中でない他のDJセッションでSENDがあった場合は、該当タブに未読通知を表示。
+  - 「+追加」モーダルから、DJ用URL/セッションIDとVJパスワードを入力して手動でセッションを追加可能。
 - **ワンタップ検索 ＆ コピー**:
   - 受信曲およびリスト内の曲名・アーティスト名をタップすると、上部の素材検索ボックスに自動入力（手入力での編集も可能）。
   - **Google / YouTube / ニコニコ動画 / GIPHY** ボタンでワンクリック外部検索（検索結果は別タブで開く）。
 - **READY 通知ボタン**:
   - 「READY」ボタン押下で、DJ画面側へ素材準備完了ステータスを即時送信。（押さなければREADY通知が飛ばないのみで、システム動作に支障はありません。）
+  - READYは現在の `stateVersion` に対して1回のみ送信可能。DJが新たにSENDして版が進んでいる場合や、同じ版へ重複送信した場合はサーバーが `409` を返す。
 
 ---
 
@@ -97,24 +106,40 @@ VJの素材検索と進捗管理を最大効率化するUI。
 
 | エンドポイント | メソッド | 説明 |
 | :--- | :--- | :--- |
-| `backend/api/register.php` | `POST` | セッション新規登録およびVJロビーコード紐付け |
-| `backend/api/action.php` | `POST` | DJ/VJのアクション送信、セッション削除、ロビー操作 |
+| `backend/api/register.php` | `POST` | セッション新規登録（アカウント名・DJ/VJパスワード・トラック一覧）。`sessionId` (32桁hex) を返す |
+| `backend/api/action.php?action=...` | `POST` | ロビー操作、ログイン、状態同期、SEND / READY、セッション削除 |
 | `backend/api/config.php` | `GET` | Pusher App Key や Cluster 等のフロント用設定取得 |
 
 ### 4.2 アクションAPI (`action.php`) の動作仕様
-- `action=send`: トラックIDを指定してVJへ送信。
-- `action=vibes`: 手入力の曲名・アーティスト名を割込み送信 (`is_vibes: true`)。
-- `action=ready`: 指定トラックの素材準備完了状態を設定。
-- `action=delete_session`: 認証済みのDJ/VJがセッションJSON、プレイリスト、ロビー参照を削除。
-- `action=status`: 現在のセッションステート（全トラック情報・現在選択曲・READY状態等）をJSONで取得。
+
+**ロビー系（セッション認証不要）**
+| action | 主なパラメータ | 動作 |
+| :--- | :--- | :--- |
+| `create_lobby` | なし | 10文字のロビーコード（紛らわしい文字を除く英数字）を発行し `lobby_{code}.json` を作成 |
+| `push_to_lobby` | `lobbyCode`, `sessionId`, `vjPassword`, `djName` | VJパスワード検証後、ロビーへDJセッションを追加（同一セッションは置換）。VJ用の一時招待トークンを発行し、Pusherで `session-pushed` / `session-replaced` を通知 |
+| `poll_lobby` | `lobbyCode`, 既知セッションID・トークンハッシュ | 差分ポーリング。新規追加・置換・削除されたセッションのみ返す（VJは30秒間隔で実行） |
+
+**セッション系**
+| action | ロール | 主なパラメータ | 動作 |
+| :--- | :--- | :--- | :--- |
+| `login` | DJ / VJ | `sessionId`, `role`, `password` または `inviteToken` (VJのみ) | 認証成功で認証トークンと現在の `stateVersion` を返す。5回失敗で15分ロックアウト |
+| `sync` | DJ / VJ | 認証トークン | `tracks`, `nowPlayingIdx`, `sentIdx`, `customTrack`, `stateVersion` を返す |
+| `send` | DJ | `sendIdx` または `customTrack {title, artist}` | プレイリスト曲の送信、または手入力曲（VIBES!）の割込み送信（`sentIdx = -2`, `isVibes: true`）。`stateVersion` を +1 |
+| `ready` | VJ | `readyForVersion` | 現在の `stateVersion` と一致する場合のみREADYを記録・通知。不一致は `409 READY_VERSION_MISMATCH`、重複は `409 READY_DUPLICATE` |
+| `delete_session` | DJ / VJ | 認証トークン | セッションJSONとロビー参照を削除し、`session-removed` を通知 |
+
+- **Pusher配信失敗時のロールバック**: `send` / `ready` のPusher送信に失敗した場合、セッションJSONを送信前の状態に戻し、`rollback` イベントを試行送信したうえで `500 PUSHER_DELIVERY_FAILED` を返す。
 
 ### 4.3 Pusher リアルタイムイベント仕様
-- **Channel**: `session-{session_id}` / `lobby-{lobby_code}`
-- **Event Names**:
-  - `update-track`: 曲のSEND通知（VJ画面更新）
-  - `update-ready`: VJのREADY通知（DJ画面更新）
-  - `lobby-update`: VJロビーへの新規DJ追加通知
-  - `session-removed`: セッション削除通知。接続中のVJタブからも自動削除。
+| Channel | Event | ペイロード `action` | 内容 |
+| :--- | :--- | :--- | :--- |
+| `session-{sessionId}` | `state-updated` | `send` | 曲のSEND / VIBES!通知（`sentIdx`, `nowPlayingIdx`, `customTrack`, `stateVersion`） |
+| `session-{sessionId}` | `state-updated` | `vj-ready` | VJのREADY通知（`readyForVersion`） |
+| `session-{sessionId}` | `state-updated` | `rollback` | Pusher配信失敗時の状態巻き戻し通知 |
+| `session-{sessionId}` | `session-removed` | `session-removed` | セッション削除通知。接続中のVJタブからも自動削除 |
+| `lobby-{lobbyCode}` | `session-pushed` | - | VJロビーへの新規DJセッション追加 |
+| `lobby-{lobbyCode}` | `session-replaced` | - | 同一DJセッションの再送信による置換 |
+| `lobby-{lobbyCode}` | `session-removed` | - | ロビーからのセッション削除 |
 
 ---
 
@@ -139,6 +164,8 @@ VJの素材検索と進捗管理を最大効率化するUI。
 
 - **Pusher 認証情報**: `APP_ID`, `KEY`, `SECRET`, `CLUSTER`
 - **HMAC 秘密鍵 (`$HMAC_SECRET`)**: 認証トークンおよびデータ改ざん検証用の暗号鍵。
+- **セッション有効期限 (`$SESSION_LIFETIME`)**: 秒単位（既定 `28800` = 8時間）。バックエンドの自動削除とブラウザ側の復帰期限で共有。
+- **認証**: DJ/VJパスワード（数字4桁）および認証トークンはハッシュ化して保存。ログインは5回失敗で15分間ロックアウト。
 - **アクセス制御**: `backend/api/.htaccess` および `backend/data/.htaccess` により、設定・JSONデータファイルへの直接HTTPアクセスを遮断。APIアクセス時には作成から8時間を超えたJSONを自動削除。
 
 ---
@@ -148,7 +175,7 @@ VJの素材検索と進捗管理を最大効率化するUI。
 ### 7.1 Docker / ローカル開発 ＆ テスト環境構築
 
 - **コンテナ起動**:
-  - `docker compose up -d`: Webサーバー (PHP 8.3 / ポート `8000`) および Playwright テストコンテナを一括起動。
+  - `docker compose up -d`: Webサーバー (Apache + PHP 8.3 / ホスト側ポート `8787` → `http://localhost:8787`) および Playwright テストコンテナを一括起動。
 - **Playwright テスト環境の初期化 ＆ テスト実行手順**:
   - **依存パッケージのインストール**: Playwright 公式コンテナ (`mcr.microsoft.com/playwright`) 内で `@playwright/test` が必要となるため、テスト初回実行時にインストールします。
   - **対話プロンプトの回避**: CI/CD や自動化環境では `npx -y` または `bash -c` 内でパッケージをセットアップし、プロンプト待ちを防ぎます。
@@ -177,7 +204,7 @@ VJの素材検索と進捗管理を最大効率化するUI。
 
 ```
 +-------------------------------------------------------------------+
-|                  PDVH 自動テストスイート (10/10 PASS)               |
+|                     PDVH 自動テストスイート                         |
 +-------------------------------------------------------------------+
 |  1. 単体テスト (Unit)           | parser.js のファイル構文解析検証    |
 |  2. API統合テスト (Integration)  | PHPバックエンド (register/action)   |
@@ -185,23 +212,25 @@ VJの素材検索と進捗管理を最大効率化するUI。
 |  4. シナリオE2E (VJ Lobby)      | 10文字コード生成 & 複数DJ接続      |
 |  5. シナリオE2E (Multi-DJ)       | 3実プレイリスト、複数SEND、追加・削除、リロード・ブラウザ閉鎖復旧 |
 |  6. UI仕様適合テスト (Alignment)| PC 450px枠 / 全画面フラッシュ / 4ボタン|
+|  7. ビジュアル検証 (Visual)      | 7端末 × 3プレイリストの画面撮影・収まり判定 |
 +-------------------------------------------------------------------+
 ```
 
 ### 8.1 テスト構成一覧
 
-| カテゴリ | スクリプトパス | 検証内容 | ケース数 |
+| カテゴリ | スクリプトパス | 検証内容 | test定義数 |
 | :--- | :--- | :--- | :---: |
-| **単体テスト** | [`tests/01_parser_unit.spec.js`](file:///workspace/pon_dash_vj_helper/tests/01_parser_unit.spec.js) | M3U/M3U8, CSV, XML (Rekordbox), TXT ファイル解析ロジックの精度検証 | 4 |
-| **API統合テスト** | [`tests/02_api_integration.spec.js`](file:///workspace/pon_dash_vj_helper/tests/02_api_integration.spec.js) | `config.php`, `register.php` (セッション発行), `action.php` (SEND/VIBES/READY) 端点動作 | 3 |
-| **E2E シナリオ (単一)** | [`tests/03_e2e_single_session.spec.js`](file:///workspace/pon_dash_vj_helper/tests/03_e2e_single_session.spec.js) | 事前登録 〜 DJ/VJログイン 〜 SEND 〜 READY フィードバックの一巡テスト | 1 |
-| **E2E シナリオ (ロビー)** | [`tests/04_e2e_vj_lobby.spec.js`](file:///workspace/pon_dash_vj_helper/tests/04_e2e_vj_lobby.spec.js) | VJロビーコード発行 (10文字) 〜 DJロビーコード連携 〜 ロビー画面接続検証 | 1 |
-| **E2E シナリオ (Multi-DJ)** | [`tests/05_e2e_multi_dj.spec.js`](file:///workspace/pon_dash_vj_helper/tests/05_e2e_multi_dj.spec.js) | 3つのM3U8、1VJ対3DJ、SEND、未読、削除、DJ/VJリロード・ブラウザ閉鎖後の復旧 | 1 |
-| **UI仕様適合テスト** | [`tests/spec_alignment.spec.js`](file:///workspace/pon_dash_vj_helper/tests/spec_alignment.spec.js) | PC 450pxフレーム枠、素材検索4ボタン、画面全体フラッシュクラス発火検証 | 1 |
+| **単体テスト** | [`tests/01_parser_unit.spec.js`](../tests/01_parser_unit.spec.js) | M3U/M3U8, CSV, XML (Rekordbox), TXT ファイル解析ロジックの精度検証 | 4 |
+| **API統合テスト** | [`tests/02_api_integration.spec.js`](../tests/02_api_integration.spec.js) | `config.php`, `register.php` (セッション発行), `action.php` (ロビー / login / sync / SEND / VIBES! / READY / 削除) の動作 | 8 |
+| **E2E シナリオ (単一)** | [`tests/03_e2e_single_session.spec.js`](../tests/03_e2e_single_session.spec.js) | 事前登録 〜 DJ/VJログイン 〜 SEND 〜 READY フィードバックの一巡テスト | 3 |
+| **E2E シナリオ (ロビー)** | [`tests/04_e2e_vj_lobby.spec.js`](../tests/04_e2e_vj_lobby.spec.js) | VJロビーコード発行 (10文字) 〜 DJロビーコード連携 〜 ロビー画面接続検証 | 1 |
+| **E2E シナリオ (Multi-DJ)** | [`tests/05_e2e_multi_dj.spec.js`](../tests/05_e2e_multi_dj.spec.js) | 3つのM3U8、1VJ対3DJ、SEND、未読、削除、DJ/VJリロード・ブラウザ閉鎖後の復旧 | 1 |
+| **UI仕様適合テスト** | [`tests/spec_alignment.spec.js`](../tests/spec_alignment.spec.js) | PC 450pxフレーム枠、素材検索4ボタン、画面全体フラッシュクラス発火検証 | 1 |
+| **ビジュアル検証** | [`tests/visual_screenshots.spec.js`](../tests/visual_screenshots.spec.js) | 各端末・各実プレイリストでの画面撮影と要素はみ出し判定（8.4参照） | 1 |
 
 ### 8.2 一括テスト実行コマンド
 
-以下のコマンドで、全 10 テストケースを Docker コンテナ内で一括実行できます。
+以下のコマンドで、上記 7 スクリプトを Docker コンテナ内で一括実行できます（`--workers=1`、結果は `test-results/playwright.json`）。
 
 ```bash
 # 全テストスイートの一括実行 (Docker)
@@ -215,10 +244,10 @@ docker compose exec playwright bash tests/run_all_tests.sh
 
 ### 8.4 マルチデバイス外観ビジュアル検証 ＆ レイアウト収まりテスト
 各種端末（PC、iPhone 3世代、Android 3パターン）における画面遷移フェーズごとの高画質スクリーンショット（計49枚）の撮影と、要素はみ出し・スクロールオーバーフローの自動判定アサーションを実施します。
-- **撮影 ＆ 検証スクリプト**: [`tests/visual_screenshots.spec.js`](file:///workspace/pon_dash_vj_helper/tests/visual_screenshots.spec.js)
-- **レイアウト検証詳細レポート**: [`test-results/layout_verification_report.json`](file:///workspace/pon_dash_vj_helper/test-results/layout_verification_report.json) (全49画面で `passed: true`)
-- **保管ディレクトリ**: [`test-results/screenshots/`](file:///workspace/pon_dash_vj_helper/test-results/screenshots/)
-- **目視確認カタログ**: [`test-results/screenshots/README.md`](file:///workspace/pon_dash_vj_helper/test-results/screenshots/README.md)
-- **HTML ギャラリービューア**: [`test-results/screenshots/index.html`](file:///workspace/pon_dash_vj_helper/test-results/screenshots/index.html)
+- **撮影 ＆ 検証スクリプト**: [`tests/visual_screenshots.spec.js`](../tests/visual_screenshots.spec.js)
+- **レイアウト検証詳細レポート**: [`test-results/layout_verification_report.json`](../test-results/layout_verification_report.json) (全49画面で `passed: true`)
+- **保管ディレクトリ**: [`test-results/screenshots/`](../test-results/screenshots/)
+- **目視確認カタログ**: [`test-results/screenshots/README.md`](../test-results/screenshots/README.md)
+- **HTML ギャラリービューア**: [`test-results/screenshots/index.html`](../test-results/screenshots/index.html)
 
 

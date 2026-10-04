@@ -2,7 +2,7 @@ const { test, expect } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
 
-const host = 'http://172.19.0.2';
+const host = process.env.TEST_HOST || 'http://app';
 
 const devices = [
     { id: 'pc_desktop', name: 'PC (Desktop 1280x800)', viewport: { width: 1280, height: 800 }, isPc: true },

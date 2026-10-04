@@ -1,7 +1,7 @@
 const { test, expect } = require('@playwright/test');
 
 test.describe('E2E Test: Single Session Flow (Register -> DJ -> VJ)', () => {
-    const host = 'http://172.19.0.2';
+    const host = process.env.TEST_HOST || 'http://app';
 
     test('Landing page and VDJ lobby handoff expose the new entry points', async ({ page }) => {
         await page.goto(`${host}/index.html`);

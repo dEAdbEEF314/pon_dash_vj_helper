@@ -1,7 +1,7 @@
 const { test, expect } = require('@playwright/test');
 
 test.describe('E2E Test: VJ Lobby & Multi-DJ Session Flow', () => {
-    const host = 'http://172.19.0.2';
+    const host = process.env.TEST_HOST || 'http://app';
 
     test('VJ Lobby Code Generation & Multi-DJ Tab Management', async ({ browser }) => {
         const vjContext = await browser.newContext();

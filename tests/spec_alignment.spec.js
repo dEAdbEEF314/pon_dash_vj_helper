@@ -7,7 +7,7 @@ test('Verify Specification Alignment', async ({ page }) => {
         tests: []
     };
 
-    const host = 'http://172.19.0.2';
+    const host = process.env.TEST_HOST || 'http://app';
 
     // Test 1: PC Frame Width (450px)
     await page.setViewportSize({ width: 1000, height: 900 });

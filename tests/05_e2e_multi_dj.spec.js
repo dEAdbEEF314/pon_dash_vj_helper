@@ -2,7 +2,7 @@ const { test, expect } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
 
-const host = 'http://172.19.0.2';
+const host = process.env.TEST_HOST || 'http://app';
 const playlistFiles = [
     '20250224_playlist_1.m3u8',
     '20260131_playlist_2.m3u8',

@@ -1,7 +1,7 @@
 const { test, expect } = require('@playwright/test');
 
 test.describe('Unit Test: PlaylistParser (parser.js)', () => {
-    const host = 'http://172.19.0.2';
+    const host = process.env.TEST_HOST || 'http://app';
 
     test('M3U/M3U8 parsing', async ({ page }) => {
         await page.goto(`${host}/dj-register.html`);

@@ -1,7 +1,7 @@
 const { test, expect } = require('@playwright/test');
 
 test.describe('Integration Test: Backend API Endpoints', () => {
-    const host = 'http://172.19.0.2';
+    const host = process.env.TEST_HOST || 'http://app';
 
     test('GET config.php returns Pusher key configuration', async ({ request }) => {
         const response = await request.get(`${host}/backend/api/config.php`);
