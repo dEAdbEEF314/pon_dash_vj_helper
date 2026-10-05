@@ -24,10 +24,25 @@ if ((int)($_SERVER['CONTENT_LENGTH'] ?? 0) > 1048576) {
     exit;
 }
 
-// CORS設定 (H-3)
+// CORS設定 (H-3 / リバースプロキシ・Cloudflare対応)
 $allowedOrigin = rtrim(trim((string)($_SERVER['HTTP_ORIGIN'] ?? '')), '/');
-$requestScheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-$requestHost = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
+
+// プロキシ経由のスキーム (X-Forwarded-Proto) を優先判定
+$forwardedProto = strtolower((string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''));
+if ($forwardedProto !== '') {
+    $requestScheme = trim(explode(',', $forwardedProto)[0]);
+} else {
+    $requestScheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+}
+
+// プロキシ経由のホスト名 (X-Forwarded-Host) を優先判定
+$forwardedHost = strtolower((string)($_SERVER['HTTP_X_FORWARDED_HOST'] ?? ''));
+if ($forwardedHost !== '') {
+    $requestHost = trim(explode(',', $forwardedHost)[0]);
+} else {
+    $requestHost = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
+}
+
 $sameOrigin = $requestHost !== '' ? $requestScheme . '://' . $requestHost : '';
 if ($allowedOrigin !== '' && ($sameOrigin === '' || !hash_equals($sameOrigin, $allowedOrigin))) {
     http_response_code(403);

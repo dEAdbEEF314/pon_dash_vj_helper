@@ -174,6 +174,54 @@ test.describe('Integration Test: Backend API Endpoints', () => {
         expect((await actionResponse.json()).success).toBe(false);
     });
 
+    test('API respects X-Forwarded-Proto and X-Forwarded-Host for reverse proxy / Cloudflare origin validation', async ({ request }) => {
+        const validResponse = await request.post(`${host}/backend/api/register.php`, {
+            headers: {
+                Origin: 'https://vdj.outergods.party',
+                'X-Forwarded-Proto': 'https',
+                'X-Forwarded-Host': 'vdj.outergods.party'
+            },
+            data: {
+                accountName: 'ProxyOriginTest',
+                djPassword: '1357',
+                vjPassword: '2468',
+                tracks: [{ artist: 'Artist', title: 'Title' }]
+            }
+        });
+        expect(validResponse.status()).toBe(200);
+        const validJson = await validResponse.json();
+        expect(validJson.success).toBe(true);
+        expect(validResponse.headers()['access-control-allow-origin']).toBe('https://vdj.outergods.party');
+
+        const invalidResponse = await request.post(`${host}/backend/api/register.php`, {
+            headers: {
+                Origin: 'https://attacker.example',
+                'X-Forwarded-Proto': 'https',
+                'X-Forwarded-Host': 'vdj.outergods.party'
+            },
+            data: {
+                accountName: 'ProxyAttackerTest',
+                djPassword: '1357',
+                vjPassword: '2468',
+                tracks: [{ artist: 'Artist', title: 'Title' }]
+            }
+        });
+        expect(invalidResponse.status()).toBe(403);
+        expect((await invalidResponse.json()).success).toBe(false);
+
+        const actionResponse = await request.post(`${host}/backend/api/action.php?action=create_lobby`, {
+            headers: {
+                Origin: 'https://vdj.outergods.party',
+                'X-Forwarded-Proto': 'https',
+                'X-Forwarded-Host': 'vdj.outergods.party'
+            },
+            data: {}
+        });
+        expect(actionResponse.status()).toBe(200);
+        expect((await actionResponse.json()).success).toBe(true);
+        expect(actionResponse.headers()['access-control-allow-origin']).toBe('https://vdj.outergods.party');
+    });
+
     test('authenticated delete_session removes the server session', async ({ request }) => {
         const registration = await request.post(`${host}/backend/api/register.php`, {
             data: {
